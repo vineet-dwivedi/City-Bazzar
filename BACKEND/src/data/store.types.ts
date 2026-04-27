@@ -1,4 +1,19 @@
-import { AnalyticsEventType, CatalogProduct, InventoryItem, OnboardingAnalysis, ProductCategory, Shop, ShopAnalytics, ShopType, StockStatus, User, UserRole } from "../types.js";
+// Shared store contracts keep memory and Mongo implementations interchangeable.
+import {
+  AnalyticsEventType,
+  CatalogProduct,
+  InventoryItem,
+  OnboardingAnalysis,
+  PickupIntent,
+  PickupIntentStatus,
+  ProductCategory,
+  Shop,
+  ShopAnalytics,
+  ShopType,
+  StockStatus,
+  User,
+  UserRole
+} from "../types.js";
 
 export type DataStoreMode = "memory" | "mongo";
 export type InventorySource = "manual" | "ai_assisted";
@@ -95,6 +110,17 @@ export interface SearchLogCreateInput {
   selectedCatalogProductId?: string;
 }
 
+export interface PickupIntentCreateInput {
+  shopId: string;
+  productId: string;
+  inventoryItemId?: string;
+  customerUserId?: string;
+  customerName: string;
+  customerPhone: string;
+  quantityRequested: number;
+  note?: string;
+}
+
 export interface AnalyticsEventCreateInput {
   eventType: AnalyticsEventName;
   actorUserId?: string;
@@ -138,4 +164,11 @@ export interface DataStore {
   updateOnboardingSession(input: OnboardingSessionUpdateInput): Promise<void>;
   createSearchLog(input: SearchLogCreateInput): Promise<void>;
   createAnalyticsEvent(input: AnalyticsEventCreateInput): Promise<void>;
+  createPickupIntent(input: PickupIntentCreateInput): Promise<PickupIntent>;
+  findPickupIntentById(intentId: string): Promise<PickupIntent | undefined>;
+  listPickupIntentsByShop(shopId: string): Promise<PickupIntent[]>;
+  updatePickupIntentStatus(
+    intentId: string,
+    status: PickupIntentStatus
+  ): Promise<PickupIntent | undefined>;
 }

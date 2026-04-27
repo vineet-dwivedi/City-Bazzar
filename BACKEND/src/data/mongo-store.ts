@@ -1,11 +1,15 @@
+// Mongo store mirrors the memory-store contract with persistent collections.
 import { randomUUID } from "node:crypto";
 import { Db, MongoClient } from "mongodb";
+import { DEFAULT_DB_NAME } from "../config.js";
 import { createSeedState } from "./seed.js";
 import {
   toCatalogProduct,
   toCatalogProductRecord,
   toInventoryItem,
   toInventoryItemRecord,
+  toPickupIntent,
+  toPickupIntentRecord,
   toShop,
   toShopRecord,
   toUser
@@ -16,6 +20,7 @@ import {
   AnalyticsEventRecord,
   CatalogProductRecord,
   InventoryItemRecord,
+  PickupIntentRecord,
   SearchLogRecord,
   ShopRecord,
   UserRecord
@@ -27,12 +32,13 @@ import {
   InventoryItemUpsertInput,
   OnboardingSessionCreateInput,
   OnboardingSessionUpdateInput,
+  PickupIntentCreateInput,
   SearchLogCreateInput,
   ShopProfileUpdateInput,
   ShopRegistrationInput,
   UserCreateInput
 } from "./store.types.js";
-import { CatalogProduct, Shop, User } from "../types.js";
+import { CatalogProduct, PickupIntent, Shop, User } from "../types.js";
 import { slugify } from "../utils/slug.js";
 
 const getMongoDb = async () => {
@@ -44,7 +50,7 @@ const getMongoDb = async () => {
 
   const client = new MongoClient(uri);
   await client.connect();
-  return client.db(process.env.MONGODB_DB_NAME ?? "city_bazaar");
+  return client.db(process.env.MONGODB_DB_NAME ?? DEFAULT_DB_NAME);
 };
 
 export class MongoDataStore implements DataStore {
@@ -56,11 +62,13 @@ export class MongoDataStore implements DataStore {
       return;
     }
 
+    // Initialization is lazy so tests and scripts only connect when needed.
     this.database = await getMongoDb();
     await this.ensureIndexes();
     await this.seedIfNeeded();
   }
 
+  // User methods
   async createUser(input: UserCreateInput) {
     const now = new Date().toISOString();
     const record: UserRecord = {
@@ -113,6 +121,7 @@ export class MongoDataStore implements DataStore {
     );
   }
 
+  // Shop methods
   async listShops() {
     const records = await this.shops().find({}).toArray();
     return records.map(toShop);
@@ -244,6 +253,7 @@ export class MongoDataStore implements DataStore {
     return record ? toShop(record) : undefined;
   }
 
+  // Catalog methods
   async listCatalogProducts() {
     const records = await this.catalogProducts().find({}).toArray();
     return records.map(toCatalogProduct);
@@ -271,6 +281,7 @@ export class MongoDataStore implements DataStore {
     return product;
   }
 
+  // Inventory methods
   async listInventoryItems() {
     const records = await this.inventoryItems().find({}).toArray();
     return records.map(toInventoryItem);
@@ -367,6 +378,7 @@ export class MongoDataStore implements DataStore {
     return false;
   }
 
+  // Tracking methods
   async createOnboardingSession(input: OnboardingSessionCreateInput) {
     const now = new Date().toISOString();
     const sessionId = `onb-${randomUUID()}`;
@@ -436,7 +448,54 @@ export class MongoDataStore implements DataStore {
     });
   }
 
+  async createPickupIntent(input: PickupIntentCreateInput) {
+    const now = new Date().toISOString();
+    const intent: PickupIntent = {
+      id: `pick-${randomUUID()}`,
+      shopId: input.shopId,
+      productId: input.productId,
+      inventoryItemId: input.inventoryItemId,
+      customerUserId: input.customerUserId,
+      customerName: input.customerName,
+      customerPhone: input.customerPhone,
+      quantityRequested: input.quantityRequested,
+      note: input.note,
+      status: "requested",
+      createdAt: now,
+      updatedAt: now
+    };
+
+    await this.pickupIntents().insertOne(toPickupIntentRecord(intent));
+    return intent;
+  }
+
+  async findPickupIntentById(intentId: string) {
+    const record = await this.pickupIntents().findOne({ _id: intentId });
+    return record ? toPickupIntent(record) : undefined;
+  }
+
+  async listPickupIntentsByShop(shopId: string) {
+    const records = await this.pickupIntents().find({ shopId }).sort({ createdAt: -1 }).toArray();
+    return records.map(toPickupIntent);
+  }
+
+  async updatePickupIntentStatus(intentId: string, status: PickupIntent["status"]) {
+    await this.pickupIntents().updateOne(
+      { _id: intentId },
+      {
+        $set: {
+          status,
+          updatedAt: new Date().toISOString()
+        }
+      }
+    );
+
+    const updated = await this.pickupIntents().findOne({ _id: intentId });
+    return updated ? toPickupIntent(updated) : undefined;
+  }
+
   private async refreshInventoryCount(shopId: string) {
+    // Inventory count is kept on the shop for quick dashboard reads.
     const inventoryCount = await this.inventoryItems().countDocuments({ shopId });
 
     await this.shops().updateOne(
@@ -452,6 +511,7 @@ export class MongoDataStore implements DataStore {
   }
 
   private async ensureIndexes() {
+    // Keep indexes close to the store so collection behavior is obvious.
     await this.users().createIndex({ email: 1 }, { unique: true, sparse: true });
     await this.users().createIndex({ phone: 1 }, { unique: true, sparse: true });
     await this.shops().createIndex({ slug: 1 }, { unique: true });
@@ -463,6 +523,7 @@ export class MongoDataStore implements DataStore {
       { shopId: 1, catalogProductId: 1 },
       { unique: true }
     );
+    await this.pickupIntents().createIndex({ shopId: 1, status: 1, createdAt: -1 });
     await this.searchLogs().createIndex({ normalizedQuery: 1 });
     await this.analyticsEvents().createIndex({ eventType: 1, createdAt: -1 });
   }
@@ -472,6 +533,7 @@ export class MongoDataStore implements DataStore {
       return;
     }
 
+    // Seed only when the database is empty so restarts stay idempotent.
     const existingShopCount = await this.shops().countDocuments();
 
     if (existingShopCount > 0) {
@@ -509,6 +571,7 @@ export class MongoDataStore implements DataStore {
     return `${normalized}-${fallbackId.slice(-6)}`;
   }
 
+  // Collection helpers
   private db() {
     if (!this.database) {
       throw new Error("Mongo store has not been initialized.");
@@ -543,5 +606,9 @@ export class MongoDataStore implements DataStore {
 
   private analyticsEvents() {
     return this.db().collection<AnalyticsEventRecord>("analytics_events");
+  }
+
+  private pickupIntents() {
+    return this.db().collection<PickupIntentRecord>("pickup_intents");
   }
 }

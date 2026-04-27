@@ -1,83 +1,53 @@
+// Onboarding routes handle AI analysis and the final owner-confirmed save.
 import { Router } from "express";
+import { PRODUCT_CATEGORIES, STOCK_STATUSES, isOneOf } from "../config.js";
+import { AuthenticatedRequest, requireAuth, requireShopOwner } from "../middleware/auth.middleware.js";
+import { ownerService } from "../services/owner.service.js";
 import { onboardingService } from "../services/onboarding.service.js";
 import { shopService } from "../services/shop.service.js";
 import { asyncHandler } from "../utils/async-handler.js";
+import { badRequest, notFound } from "../utils/api-error.js";
+import { optionalNumber, optionalString, requiredNumber, requiredString, stringList } from "../utils/input.js";
 
 export const onboardingRouter = Router();
 
-const allowedCategories = new Set([
-  "grocery",
-  "stationery",
-  "pharmacy",
-  "personal-care",
-  "beverages",
-  "snacks",
-  "household"
-]);
-const allowedStockStatuses = new Set(["in_stock", "low_stock", "out_of_stock"]);
-
 onboardingRouter.post("/analyze", asyncHandler(async (request, response) => {
-  const imageUrl = String(request.body.imageUrl ?? "").trim();
-  const rawText = typeof request.body.rawText === "string" ? request.body.rawText : undefined;
-  const manualHint =
-    typeof request.body.manualHint === "string" ? request.body.manualHint : undefined;
-  const shopId = typeof request.body.shopId === "string" ? request.body.shopId : undefined;
-
-  if (!imageUrl) {
-    response.status(400).json({ message: "imageUrl is required." });
-    return;
-  }
+  const imageUrl = requiredString(request.body.imageUrl, "imageUrl");
+  const rawText = optionalString(request.body.rawText);
+  const manualHint = optionalString(request.body.manualHint);
+  const shopId = optionalString(request.body.shopId);
 
   response.json(await onboardingService.analyze({ imageUrl, rawText, manualHint, shopId }));
 }));
 
-onboardingRouter.post("/confirm", asyncHandler(async (request, response) => {
-  const shopId = String(request.body.shopId ?? "").trim();
-  const name = String(request.body.name ?? "").trim();
-  const brand = String(request.body.brand ?? "").trim();
-  const category = request.body.category;
-  const mrp = request.body.mrp !== undefined ? Number(request.body.mrp) : null;
-  const price = request.body.price !== undefined ? Number(request.body.price) : null;
-  const quantity = request.body.quantity !== undefined ? Number(request.body.quantity) : 1;
-  const stockStatus = request.body.stockStatus ?? "in_stock";
+onboardingRouter.post("/confirm", requireAuth, requireShopOwner, asyncHandler(async (request, response) => {
+  const authUser = (request as AuthenticatedRequest).authUser!;
+  const shop = await ownerService.getOwnerShop(authUser.id);
 
-  if (!shopId || !name || !brand || !category) {
-    response
-      .status(400)
-      .json({ message: "shopId, name, brand, and category are required." });
-    return;
+  if (!shop) {
+    throw notFound("Create your shop before confirming onboarding.");
   }
 
-  if (!allowedCategories.has(String(category))) {
-    response.status(400).json({
-      message:
-        "category must be grocery, stationery, pharmacy, personal-care, beverages, snacks, or household."
-    });
-    return;
+  const name = requiredString(request.body.name, "name");
+  const brand = requiredString(request.body.brand, "brand");
+  const category = requiredString(request.body.category, "category");
+  const stockStatus = optionalString(request.body.stockStatus) ?? "in_stock";
+  const mrp = optionalNumber(request.body.mrp, "mrp") ?? null;
+  const price = optionalNumber(request.body.price, "price") ?? null;
+  const quantity = request.body.quantity === undefined ? 1 : requiredNumber(request.body.quantity, "quantity");
+
+  if (!isOneOf(category, PRODUCT_CATEGORIES)) {
+    throw badRequest("Invalid category.");
   }
 
-  if (!allowedStockStatuses.has(String(stockStatus))) {
-    response.status(400).json({ message: "stockStatus must be in_stock, low_stock, or out_of_stock." });
-    return;
-  }
-
-  if (
-    (mrp !== null && Number.isNaN(mrp)) ||
-    (price !== null && Number.isNaN(price)) ||
-    Number.isNaN(quantity)
-  ) {
-    response.status(400).json({ message: "mrp, price, and quantity must be valid numbers." });
-    return;
+  if (!isOneOf(stockStatus, STOCK_STATUSES)) {
+    throw badRequest("Invalid stockStatus.");
   }
 
   const result = await shopService.confirmOnboarding({
-    shopId,
-    catalogProductId:
-      typeof request.body.catalogProductId === "string" ? request.body.catalogProductId : undefined,
-    onboardingSessionId:
-      typeof request.body.onboardingSessionId === "string"
-        ? request.body.onboardingSessionId
-        : undefined,
+    shopId: shop.id,
+    catalogProductId: optionalString(request.body.catalogProductId),
+    onboardingSessionId: optionalString(request.body.onboardingSessionId),
     name,
     brand,
     category,
@@ -85,15 +55,12 @@ onboardingRouter.post("/confirm", asyncHandler(async (request, response) => {
     price,
     quantity,
     stockStatus,
-    imageUrl: typeof request.body.imageUrl === "string" ? request.body.imageUrl : undefined,
-    keywords: Array.isArray(request.body.keywords)
-      ? request.body.keywords.filter((value: unknown): value is string => typeof value === "string")
-      : []
+    imageUrl: optionalString(request.body.imageUrl),
+    keywords: stringList(request.body.keywords)
   });
 
   if (!result) {
-    response.status(404).json({ message: "Shop or product could not be linked." });
-    return;
+    throw notFound("Shop or product could not be linked.");
   }
 
   response.status(201).json(result);

@@ -1,3 +1,4 @@
+// Discovery service powers public shop browsing and nearby product search.
 import { catalogService } from "./catalog.service.js";
 import { ProductDiscoveryResult, Shop } from "../types.js";
 import { dataStore } from "./store.js";
@@ -45,6 +46,7 @@ class DiscoveryService {
     lng: number;
     radiusKm: number;
   }) {
+    // Search starts from the catalog, then filters to nearby in-stock inventory.
     const matches = await catalogService.search(options.query, 12);
     const nearbyShops = await this.listShops({
       lat: options.lat,

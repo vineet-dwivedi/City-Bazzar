@@ -1,4 +1,4 @@
-import { authStore } from "./auth-store.js";
+// Owner service is a small owner-specific facade over the shop service.
 import { shopService } from "./shop.service.js";
 
 class OwnerService {
@@ -12,20 +12,11 @@ class OwnerService {
     longitude: number;
     serviceRadiusKm?: number;
   }) {
-    const existingShopId = await authStore.findOwnerShopId(userId);
-
-    if (existingShopId) {
-      return null;
-    }
-
-    const shop = await shopService.registerShop(input);
-    await authStore.linkOwnerShop(userId, shop.id);
-    return shop;
+    return shopService.registerOwnedShop(userId, input);
   }
 
   async getOwnerShop(userId: string) {
-    const shopId = await authStore.findOwnerShopId(userId);
-    return shopId ? shopService.getShop(shopId) : null;
+    return shopService.getOwnedShop(userId);
   }
 
   async updateOwnerShop(userId: string, input: {
@@ -38,19 +29,11 @@ class OwnerService {
     longitude?: number;
     serviceRadiusKm?: number;
   }) {
-    const shopId = await authStore.findOwnerShopId(userId);
-    return shopId ? shopService.updateShopProfile(shopId, input) : null;
+    return shopService.updateOwnedShop(userId, input);
   }
 
   async getOwnerInventory(userId: string) {
-    const shopId = await authStore.findOwnerShopId(userId);
-
-    if (!shopId) {
-      return null;
-    }
-
-    const shop = await shopService.getShop(shopId);
-    return shop?.inventory ?? [];
+    return shopService.getOwnedInventory(userId);
   }
 
   async upsertOwnerInventoryItem(userId: string, input: {
@@ -61,13 +44,16 @@ class OwnerService {
     mrp: number;
     imageUrl?: string;
   }) {
-    const shopId = await authStore.findOwnerShopId(userId);
-    return shopId ? shopService.upsertInventoryItem(shopId, input) : null;
+    return shopService.upsertOwnedInventoryItem(userId, input);
   }
 
   async deleteOwnerInventoryItem(userId: string, productId: string) {
-    const shopId = await authStore.findOwnerShopId(userId);
-    return shopId ? shopService.deleteInventoryItem(shopId, productId) : false;
+    return shopService.deleteOwnedInventoryItem(userId, productId);
+  }
+
+  async getOwnerAnalytics(userId: string) {
+    const shop = await shopService.getOwnedShop(userId);
+    return shop ? shopService.getAnalytics(shop.id) : null;
   }
 }
 

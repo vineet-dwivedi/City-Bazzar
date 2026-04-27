@@ -1,209 +1,208 @@
+// Owner routes keep all write operations behind owner auth.
 import { Router } from "express";
+import { PICKUP_INTENT_STATUSES, SHOP_TYPES, STOCK_STATUSES, isOneOf } from "../config.js";
 import { AuthenticatedRequest, requireAuth, requireShopOwner } from "../middleware/auth.middleware.js";
 import { ownerService } from "../services/owner.service.js";
+import { pickupService } from "../services/pickup.service.js";
 import { asyncHandler } from "../utils/async-handler.js";
+import { badRequest, notFound } from "../utils/api-error.js";
+import { optionalNumber, optionalString, requiredNumber, requiredString } from "../utils/input.js";
 
 export const ownerRouter = Router();
-const allowedShopTypes = new Set(["kirana", "stationery", "pharmacy", "general-store"]);
-const allowedStockStatuses = new Set(["in_stock", "low_stock", "out_of_stock"]);
+const missingShopMessage = "No shop is linked to this owner yet.";
 
 ownerRouter.use(requireAuth, requireShopOwner);
 
+const getOwnerUser = (request: AuthenticatedRequest) => request.authUser!;
+
+const readShopType = (value: unknown) => {
+  const type = requiredString(value, "type");
+
+  if (!isOneOf(type, SHOP_TYPES)) {
+    throw badRequest("Invalid shop type.");
+  }
+
+  return type;
+};
+
+const readStockStatus = (value: unknown) => {
+  const stockStatus = optionalString(value) ?? "in_stock";
+
+  if (!isOneOf(stockStatus, STOCK_STATUSES)) {
+    throw badRequest("Invalid stockStatus.");
+  }
+
+  return stockStatus;
+};
+
+const readPickupStatus = (value: unknown) => {
+  const status = requiredString(value, "status");
+
+  if (!isOneOf(status, PICKUP_INTENT_STATUSES)) {
+    throw badRequest("Invalid pickup intent status.");
+  }
+
+  return status;
+};
+
+const readInventoryInput = (body: Record<string, unknown>, productId = requiredString(body.productId, "productId")) => {
+  const price = body.price === undefined ? 0 : requiredNumber(body.price, "price");
+
+  return {
+    productId,
+    quantity: body.quantity === undefined ? 1 : requiredNumber(body.quantity, "quantity"),
+    price,
+    mrp: body.mrp === undefined ? price : requiredNumber(body.mrp, "mrp"),
+    stockStatus: readStockStatus(body.stockStatus),
+    imageUrl: optionalString(body.imageUrl)
+  };
+};
+
+const getOwnerShopOrThrow = async (userId: string) => {
+  const shop = await ownerService.getOwnerShop(userId);
+
+  if (!shop) {
+    throw notFound(missingShopMessage);
+  }
+
+  return shop;
+};
+
 ownerRouter.post("/shop", asyncHandler(async (request, response) => {
-  const authUser = (request as AuthenticatedRequest).authUser!;
-  const requiredFields = ["name", "type", "phone", "address", "latitude", "longitude"];
-  const missing = requiredFields.filter((field) => request.body[field] === undefined || request.body[field] === "");
-
-  if (missing.length > 0) {
-    response.status(400).json({ message: `Missing required fields: ${missing.join(", ")}` });
-    return;
-  }
-
-  if (!allowedShopTypes.has(String(request.body.type))) {
-    response.status(400).json({ message: "type must be kirana, stationery, pharmacy, or general-store." });
-    return;
-  }
-
-  const latitude = Number(request.body.latitude);
-  const longitude = Number(request.body.longitude);
-  const serviceRadiusKm =
-    request.body.serviceRadiusKm !== undefined ? Number(request.body.serviceRadiusKm) : undefined;
-
-  if (
-    Number.isNaN(latitude) ||
-    Number.isNaN(longitude) ||
-    (serviceRadiusKm !== undefined && Number.isNaN(serviceRadiusKm))
-  ) {
-    response.status(400).json({ message: "latitude, longitude, and serviceRadiusKm must be valid numbers." });
-    return;
-  }
+  const authUser = getOwnerUser(request as AuthenticatedRequest);
 
   const shop = await ownerService.createOwnerShop(authUser.id, {
-    name: String(request.body.name),
-    type: request.body.type,
-    ownerName: request.body.ownerName !== undefined ? String(request.body.ownerName) : authUser.fullName,
-    phone: String(request.body.phone),
-    address: String(request.body.address),
-    latitude,
-    longitude,
-    serviceRadiusKm
+    name: requiredString(request.body.name, "name"),
+    type: readShopType(request.body.type),
+    ownerName: optionalString(request.body.ownerName) ?? authUser.fullName,
+    phone: requiredString(request.body.phone, "phone"),
+    address: requiredString(request.body.address, "address"),
+    latitude: requiredNumber(request.body.latitude, "latitude"),
+    longitude: requiredNumber(request.body.longitude, "longitude"),
+    serviceRadiusKm: optionalNumber(request.body.serviceRadiusKm, "serviceRadiusKm")
   });
 
   if (!shop) {
-    response.status(409).json({ message: "This owner already has a shop profile." });
-    return;
+    throw badRequest("This owner already has a shop profile.");
   }
 
   response.status(201).json(shop);
 }));
 
 ownerRouter.get("/shop", asyncHandler(async (request, response) => {
-  const authUser = (request as AuthenticatedRequest).authUser!;
-  const shop = await ownerService.getOwnerShop(authUser.id);
-
-  if (!shop) {
-    response.status(404).json({ message: "No shop is linked to this owner yet." });
-    return;
-  }
-
-  response.json(shop);
+  response.json(await getOwnerShopOrThrow(getOwnerUser(request as AuthenticatedRequest).id));
 }));
 
 ownerRouter.patch("/shop", asyncHandler(async (request, response) => {
-  const authUser = (request as AuthenticatedRequest).authUser!;
-  const type = request.body.type;
-  const latitude = request.body.latitude !== undefined ? Number(request.body.latitude) : undefined;
-  const longitude = request.body.longitude !== undefined ? Number(request.body.longitude) : undefined;
-  const serviceRadiusKm =
-    request.body.serviceRadiusKm !== undefined ? Number(request.body.serviceRadiusKm) : undefined;
+  const authUser = getOwnerUser(request as AuthenticatedRequest);
+  const type = optionalString(request.body.type);
+  const latitude = optionalNumber(request.body.latitude, "latitude");
+  const longitude = optionalNumber(request.body.longitude, "longitude");
+  const serviceRadiusKm = optionalNumber(request.body.serviceRadiusKm, "serviceRadiusKm");
 
-  if (type !== undefined && !allowedShopTypes.has(String(type))) {
-    response.status(400).json({ message: "type must be kirana, stationery, pharmacy, or general-store." });
-    return;
+  if (type && !isOneOf(type, SHOP_TYPES)) {
+    throw badRequest("Invalid shop type.");
   }
 
-  if (
-    (latitude !== undefined && Number.isNaN(latitude)) ||
-    (longitude !== undefined && Number.isNaN(longitude)) ||
-    (serviceRadiusKm !== undefined && Number.isNaN(serviceRadiusKm))
-  ) {
-    response.status(400).json({ message: "latitude, longitude, and serviceRadiusKm must be valid numbers." });
-    return;
-  }
+  const shopType = type as (typeof SHOP_TYPES)[number] | undefined;
 
   const updated = await ownerService.updateOwnerShop(authUser.id, {
-    name: request.body.name !== undefined ? String(request.body.name) : undefined,
-    type,
-    ownerName: request.body.ownerName !== undefined ? String(request.body.ownerName) : undefined,
-    phone: request.body.phone !== undefined ? String(request.body.phone) : undefined,
-    address: request.body.address !== undefined ? String(request.body.address) : undefined,
+    name: optionalString(request.body.name),
+    type: shopType,
+    ownerName: optionalString(request.body.ownerName),
+    phone: optionalString(request.body.phone),
+    address: optionalString(request.body.address),
     latitude,
     longitude,
     serviceRadiusKm
   });
 
   if (!updated) {
-    response.status(404).json({ message: "No shop is linked to this owner yet." });
-    return;
+    throw notFound(missingShopMessage);
   }
 
   response.json(updated);
 }));
 
 ownerRouter.get("/inventory", asyncHandler(async (request, response) => {
-  const authUser = (request as AuthenticatedRequest).authUser!;
+  const authUser = getOwnerUser(request as AuthenticatedRequest);
   const inventory = await ownerService.getOwnerInventory(authUser.id);
 
   if (!inventory) {
-    response.status(404).json({ message: "No shop is linked to this owner yet." });
-    return;
+    throw notFound(missingShopMessage);
   }
 
   response.json({ inventory });
 }));
 
 ownerRouter.post("/inventory", asyncHandler(async (request, response) => {
-  const authUser = (request as AuthenticatedRequest).authUser!;
-  const productId = String(request.body.productId ?? "").trim();
-  const quantity = Number(request.body.quantity ?? 1);
-  const price = Number(request.body.price ?? 0);
-  const mrp = Number(request.body.mrp ?? request.body.price ?? 0);
-  const stockStatus = request.body.stockStatus ?? "in_stock";
-
-  if (!productId) {
-    response.status(400).json({ message: "productId is required." });
-    return;
-  }
-
-  if (!allowedStockStatuses.has(String(stockStatus))) {
-    response.status(400).json({ message: "stockStatus must be in_stock, low_stock, or out_of_stock." });
-    return;
-  }
-
-  if (Number.isNaN(quantity) || Number.isNaN(price) || Number.isNaN(mrp)) {
-    response.status(400).json({ message: "quantity, price, and mrp must be valid numbers." });
-    return;
-  }
-
-  const inventoryItem = await ownerService.upsertOwnerInventoryItem(authUser.id, {
-    productId,
-    stockStatus,
-    quantity,
-    price,
-    mrp,
-    imageUrl: typeof request.body.imageUrl === "string" ? request.body.imageUrl : undefined
-  });
+  const authUser = getOwnerUser(request as AuthenticatedRequest);
+  const inventoryItem = await ownerService.upsertOwnerInventoryItem(authUser.id, readInventoryInput(request.body));
 
   if (!inventoryItem) {
-    response.status(404).json({ message: "Owner shop or product not found." });
-    return;
+    throw notFound("Owner shop or product not found.");
   }
 
   response.status(201).json(inventoryItem);
 }));
 
 ownerRouter.patch("/inventory/:productId", asyncHandler(async (request, response) => {
-  const authUser = (request as AuthenticatedRequest).authUser!;
-  const quantity = Number(request.body.quantity ?? 1);
-  const price = Number(request.body.price ?? 0);
-  const mrp = Number(request.body.mrp ?? request.body.price ?? 0);
-  const stockStatus = request.body.stockStatus ?? "in_stock";
-
-  if (!allowedStockStatuses.has(String(stockStatus))) {
-    response.status(400).json({ message: "stockStatus must be in_stock, low_stock, or out_of_stock." });
-    return;
-  }
-
-  if (Number.isNaN(quantity) || Number.isNaN(price) || Number.isNaN(mrp)) {
-    response.status(400).json({ message: "quantity, price, and mrp must be valid numbers." });
-    return;
-  }
-
-  const inventoryItem = await ownerService.upsertOwnerInventoryItem(authUser.id, {
-    productId: request.params.productId,
-    stockStatus,
-    quantity,
-    price,
-    mrp,
-    imageUrl: typeof request.body.imageUrl === "string" ? request.body.imageUrl : undefined
-  });
+  const authUser = getOwnerUser(request as AuthenticatedRequest);
+  const inventoryItem = await ownerService.upsertOwnerInventoryItem(
+    authUser.id,
+    readInventoryInput(request.body, request.params.productId)
+  );
 
   if (!inventoryItem) {
-    response.status(404).json({ message: "Owner shop or product not found." });
-    return;
+    throw notFound("Owner shop or product not found.");
   }
 
   response.json(inventoryItem);
 }));
 
 ownerRouter.delete("/inventory/:productId", asyncHandler(async (request, response) => {
-  const authUser = (request as AuthenticatedRequest).authUser!;
+  const authUser = getOwnerUser(request as AuthenticatedRequest);
   const deleted = await ownerService.deleteOwnerInventoryItem(authUser.id, request.params.productId);
 
   if (!deleted) {
-    response.status(404).json({ message: "Owner inventory item not found." });
-    return;
+    throw notFound("Owner inventory item not found.");
   }
 
   response.status(204).send();
+}));
+
+ownerRouter.get("/analytics", asyncHandler(async (request, response) => {
+  const authUser = getOwnerUser(request as AuthenticatedRequest);
+  const analytics = await ownerService.getOwnerAnalytics(authUser.id);
+
+  if (!analytics) {
+    throw notFound(missingShopMessage);
+  }
+
+  response.json(analytics);
+}));
+
+ownerRouter.get("/pickup-intents", asyncHandler(async (request, response) => {
+  const authUser = getOwnerUser(request as AuthenticatedRequest);
+  const shop = await getOwnerShopOrThrow(authUser.id);
+
+  response.json({
+    pickupIntents: await pickupService.listShopIntents(shop.id)
+  });
+}));
+
+ownerRouter.patch("/pickup-intents/:intentId", asyncHandler(async (request, response) => {
+  const authUser = getOwnerUser(request as AuthenticatedRequest);
+  const shop = await getOwnerShopOrThrow(authUser.id);
+  const updated = await pickupService.updateIntentStatus(
+    shop.id,
+    request.params.intentId,
+    readPickupStatus(request.body.status)
+  );
+
+  if (!updated) {
+    throw notFound("Pickup intent not found.");
+  }
+
+  response.json(updated);
 }));

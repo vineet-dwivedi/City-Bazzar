@@ -1,3 +1,4 @@
+// Catalog service is the thin layer around shared product data.
 import { dataStore } from "./store.js";
 import { CatalogSearchMatch, ProductCategory } from "../types.js";
 import { scoreAgainstQuery } from "../utils/text.js";
@@ -12,6 +13,7 @@ class CatalogService {
   }
 
   async search(query: string, limit = 8): Promise<CatalogSearchMatch[]> {
+    // Matching stays heuristic for now so the MVP works without extra infra.
     const products = await dataStore.listCatalogProducts();
 
     const matches = products

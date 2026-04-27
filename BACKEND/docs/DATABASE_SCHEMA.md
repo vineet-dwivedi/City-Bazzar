@@ -1,265 +1,86 @@
-# City Bazaar Database Schema
+# UrbnBzr Database Schema
 
-This document locks the persistent data model for the City Bazaar MVP and near-term upgrades.
+## Purpose
 
-## Step 3 objective
+This doc locks the MVP data shape so routes, services, and Mongo collections stay aligned.
 
-Define a MongoDB-ready schema for the entities we know we need, so later persistence work does not change the product shape.
+## Design rules
 
-## Design principles
-
-1. Keep the central product catalog separate from per-shop inventory.
-2. Store shop location as GeoJSON so nearby discovery is efficient.
-3. Treat AI onboarding as a traceable workflow, not a one-time black box call.
-4. Keep analytics events append-only and derive summaries from them when needed.
-5. Design pickup intent now, even if the first release keeps it disabled.
+1. Keep shared catalog data separate from shop inventory.
+2. Store shop location as GeoJSON for nearby search.
+3. Keep AI onboarding traceable with session records.
+4. Use append-only analytics events plus light summary counters.
+5. Support pickup intent without building full order management.
 
 ## Collections
 
 ### `users`
 
-Purpose: authentication, identity, and role management.
-
-Core fields:
-- `_id`
-- `role`: `shop_owner | customer | admin`
-- `fullName`
-- `email`
-- `phone`
-- `passwordHash`
-- `isVerified`
-- `status`: `active | pending_verification | disabled`
-- `lastLoginAt`
-- `createdAt`
-- `updatedAt`
-
-Indexes:
-- unique sparse `email`
-- unique sparse `phone`
-- `role`
+Purpose: auth and identity.  
+Fields: `_id role fullName email phone passwordHash isVerified status lastLoginAt createdAt updatedAt`  
+Indexes: unique sparse `email`, unique sparse `phone`
 
 ### `shops`
 
-Purpose: the public identity and location of a local store.
-
-Core fields:
-- `_id`
-- `ownerUserId`
-- `contactName`
-- `name`
-- `slug`
-- `type`
-- `phone`
-- `address`
-- `location`
-- `serviceRadiusKm`
-- `status`: `draft | active | suspended`
-- `verificationStatus`: `unverified | pending | verified | rejected`
-- `businessHours`
-- `metricsSummary`
-- `createdAt`
-- `updatedAt`
-
-Important note:
-- `location` must be stored as GeoJSON `Point` with coordinates `[longitude, latitude]`
-
-Indexes:
-- unique `slug`
-- `ownerUserId`
-- `location` as `2dsphere`
-- `type`
-- `status`
+Purpose: public shop profile and location.  
+Fields: `_id ownerUserId name slug type phone contactName address location serviceRadiusKm metricsSummary status createdAt updatedAt`  
+Indexes: unique `slug`, `ownerUserId`, `location` as `2dsphere`
 
 ### `catalog_products`
 
-Purpose: the shared product master used across all shops.
-
-Core fields:
-- `_id`
-- `canonicalName`
-- `normalizedName`
-- `brand`
-- `category`
-- `unit`
-- `defaultMrp`
-- `keywords`
-- `searchTokens`
-- `imageHints`
-- `aliases`
-- `createdByUserId`
-- `createdAt`
-- `updatedAt`
-
-Indexes:
-- `normalizedName`
-- `brand`
-- `category`
-- text or token index on `canonicalName`, `brand`, `keywords`, `aliases`
+Purpose: central product master.  
+Fields: `_id canonicalName normalizedName brand category unit defaultMrp keywords searchTokens imageHints aliases createdAt updatedAt`  
+Indexes: `normalizedName`, `brand`, `category`
 
 ### `inventory_items`
 
-Purpose: a shop-specific record of what is actually available.
-
-Core fields:
-- `_id`
-- `shopId`
-- `catalogProductId`
-- `displayName`
-- `price`
-- `mrp`
-- `quantity`
-- `stockStatus`
-- `imageUrls`
-- `source`: `manual | ai_assisted`
-- `lastConfirmedAt`
-- `updatedByUserId`
-- `createdAt`
-- `updatedAt`
-
-Indexes:
-- unique compound `shopId + catalogProductId`
-- `shopId`
-- `catalogProductId`
-- `stockStatus`
+Purpose: shop-specific stock records.  
+Fields: `_id shopId catalogProductId displayName price mrp quantity stockStatus imageUrls source lastConfirmedAt createdAt updatedAt`  
+Indexes: unique compound `shopId + catalogProductId`, `shopId`, `catalogProductId`
 
 ### `ai_onboarding_sessions`
 
-Purpose: trace AI extraction, catalog matching, owner corrections, and confidence for each product upload.
-
-Core fields:
-- `_id`
-- `shopId`
-- `createdByUserId`
-- `sourceImageUrl`
-- `rawOcrText`
-- `manualHint`
-- `analysis`
-- `status`: `analyzed | confirmed | rejected`
-- `acceptedCatalogProductId`
-- `ownerCorrections`
-- `modelMeta`
-- `createdAt`
-- `updatedAt`
-
-Why this exists:
-- lets us measure AI accuracy
-- lets us compare suggested vs final values
-- gives us training and evaluation data later
-
-Indexes:
-- `shopId`
-- `createdByUserId`
-- `status`
-- `acceptedCatalogProductId`
+Purpose: AI suggestions plus owner confirmation history.  
+Fields: `_id shopId createdByUserId sourceImageUrl rawOcrText manualHint analysis status acceptedCatalogProductId ownerCorrections modelMeta createdAt updatedAt`  
+Indexes: `shopId`, `status`, `acceptedCatalogProductId`
 
 ### `search_logs`
 
-Purpose: capture customer demand and search quality.
-
-Core fields:
-- `_id`
-- `actorUserId`
-- `query`
-- `normalizedQuery`
-- `location`
-- `radiusKm`
-- `resultCount`
-- `selectedShopId`
-- `selectedCatalogProductId`
-- `searchAt`
-
-Indexes:
-- `normalizedQuery`
-- `actorUserId`
-- `searchAt`
+Purpose: demand tracking and search quality.  
+Fields: `_id actorUserId query normalizedQuery location radiusKm resultCount selectedShopId selectedCatalogProductId searchAt`  
+Indexes: `normalizedQuery`, `searchAt`
 
 ### `analytics_events`
 
-Purpose: track low-level product and shop interactions.
-
-Core fields:
-- `_id`
-- `eventType`
-- `actorUserId`
-- `shopId`
-- `catalogProductId`
-- `inventoryItemId`
-- `sessionId`
-- `metadata`
-- `createdAt`
-
-Example event types:
-- `view`
-- `click`
-- `search`
-- `shop_open`
-- `inventory_added`
-- `pickup_intent`
-
-Indexes:
-- `eventType`
-- `shopId`
-- `catalogProductId`
-- `createdAt`
+Purpose: low-level interaction log.  
+Fields: `_id eventType actorUserId shopId catalogProductId inventoryItemId sessionId metadata createdAt`  
+Indexes: `eventType`, `shopId`, `catalogProductId`, `createdAt`
 
 ### `pickup_intents`
 
-Purpose: a lightweight customer request to reserve or inquire about an item for pickup.
+Purpose: lightweight reserve or inquiry request for pickup.  
+Fields: `_id shopId catalogProductId inventoryItemId customerUserId customerName customerPhone quantityRequested note status createdAt updatedAt`  
+Indexes: `shopId`, `status`, `createdAt`
 
-This is schema-locked now, even if the feature is enabled after the first MVP release.
+## Relationships
 
-Core fields:
-- `_id`
-- `shopId`
-- `catalogProductId`
-- `inventoryItemId`
-- `customerUserId`
-- `customerName`
-- `customerPhone`
-- `quantityRequested`
-- `note`
-- `status`: `requested | acknowledged | ready_for_pickup | completed | cancelled`
-- `createdAt`
-- `updatedAt`
+- One `user` can own many `shops`
+- One `shop` can have many `inventory_items`
+- One `catalog_product` can appear in many `inventory_items`
+- One `shop` can have many `ai_onboarding_sessions`
+- One `shop` can receive many `pickup_intents`
 
-Indexes:
-- `shopId`
-- `customerUserId`
-- `status`
-- `createdAt`
+## Validation rules
 
-## Relationship map
+- Shop coordinates must be valid
+- GeoJSON coordinates must be `[lng, lat]`
+- Inventory requires both `shopId` and `catalogProductId`
+- `quantity` cannot be negative
+- `price` should usually be less than or equal to `mrp`
+- Confirmed onboarding must end in a valid inventory item
+- Guest search may create `search_logs` with no `actorUserId`
 
-- one `user` can own many `shops`
-- one `shop` can have many `inventory_items`
-- one `catalog_product` can appear in many `inventory_items`
-- one `shop` can have many `ai_onboarding_sessions`
-- one `user` can create many `search_logs`
-- one `shop` can receive many `pickup_intents`
-- one `catalog_product` can be referenced by many `pickup_intents`
-
-## Embedded vs referenced decisions
-
-### Referenced
-
-- `shops.ownerUserId -> users._id`
-- `inventory_items.shopId -> shops._id`
-- `inventory_items.catalogProductId -> catalog_products._id`
-- `ai_onboarding_sessions.acceptedCatalogProductId -> catalog_products._id`
-- `pickup_intents.shopId -> shops._id`
-
-### Embedded
-
-- `shops.metricsSummary`
-- `shops.businessHours`
-- `catalog_products.aliases`
-- `inventory_items.imageUrls`
-- `ai_onboarding_sessions.analysis`
-- `analytics_events.metadata`
-
-## MVP-required collections
-
-These should exist before we call the product persistent and usable:
+## MVP required collections
 
 - `users`
 - `shops`
@@ -268,55 +89,13 @@ These should exist before we call the product persistent and usable:
 - `ai_onboarding_sessions`
 - `search_logs`
 - `analytics_events`
-
-## Near-term but not day-one required
-
 - `pickup_intents`
 
-## Validation rules to lock now
+## Summary fields
 
-- shop coordinates must be valid latitude and longitude
-- shop `location.coordinates` must be stored as `[lng, lat]`
-- inventory cannot exist without both `shopId` and `catalogProductId`
-- AI-confirmed onboarding must always end in a valid inventory record
-- `price` should not exceed `mrp` unless explicitly overridden
-- `quantity` cannot be negative
-- customer guest search can create `search_logs` with no `actorUserId`
-
-## Summary fields to maintain
-
-These can be embedded for read performance and recalculated later if needed:
-
-### `shops.metricsSummary`
-
+Keep these inside `shops.metricsSummary` for fast reads:
 - `views`
 - `clicks`
 - `searchHits`
 - `inventoryCount`
 - `lastInventoryUpdateAt`
-
-## Migration notes from current in-memory MVP
-
-Current code already maps well to:
-
-- `shops`
-- `catalog_products`
-- `inventory_items`
-- a lightweight form of `shops.metricsSummary`
-
-Still missing in code:
-
-- `users`
-- `ai_onboarding_sessions`
-- `search_logs`
-- `analytics_events`
-- `pickup_intents`
-
-## What Step 3 means for engineering
-
-From this point onward:
-
-1. New backend code should align with these collection names and relations.
-2. MongoDB work should preserve the split between catalog and inventory.
-3. Auth should be built on `users`, not on shop records.
-4. AI onboarding should write a session record before or along with final inventory save.

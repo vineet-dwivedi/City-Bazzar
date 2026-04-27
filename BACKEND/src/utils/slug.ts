@@ -1,3 +1,4 @@
+// Slugs are simple, human-readable identifiers for public shop URLs later.
 export const slugify = (value: string) =>
   value
     .toLowerCase()

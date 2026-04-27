@@ -1,4 +1,6 @@
-import { authStore } from "./auth-store.js";
+// Auth service owns registration and login rules.
+import { dataStore } from "./store.js";
+import { badRequest, conflict, unauthorized } from "../utils/api-error.js";
 import { hashPassword, signAuthToken, verifyPassword } from "../utils/auth.js";
 
 class AuthService {
@@ -9,22 +11,23 @@ class AuthService {
     password: string;
     role?: "shop_owner" | "customer" | "admin";
   }) {
+    // Normalize identifiers early so duplicates are checked consistently.
     const email = input.email?.trim().toLowerCase();
     const phone = input.phone?.trim();
 
     if (!email && !phone) {
-      throw new Error("Either email or phone is required.");
+      throw badRequest("Either email or phone is required.");
     }
 
-    if (email && (await authStore.findUserByEmail(email))) {
-      throw new Error("A user with this email already exists.");
+    if (email && (await dataStore.findUserByEmail(email))) {
+      throw conflict("A user with this email already exists.");
     }
 
-    if (phone && (await authStore.findUserByPhone(phone))) {
-      throw new Error("A user with this phone already exists.");
+    if (phone && (await dataStore.findUserByPhone(phone))) {
+      throw conflict("A user with this phone already exists.");
     }
 
-    const user = await authStore.createUser({
+    const user = await dataStore.createUser({
       role: input.role ?? "shop_owner",
       fullName: input.fullName.trim(),
       email,
@@ -43,29 +46,30 @@ class AuthService {
     phone?: string;
     password: string;
   }) {
+    // Login supports either email or phone to keep onboarding flexible.
     const email = input.email?.trim().toLowerCase();
     const phone = input.phone?.trim();
     const user = email
-      ? await authStore.findUserByEmail(email)
+      ? await dataStore.findUserByEmail(email)
       : phone
-        ? await authStore.findUserByPhone(phone)
+        ? await dataStore.findUserByPhone(phone)
         : undefined;
 
     if (!user) {
-      throw new Error("Invalid credentials.");
+      throw unauthorized("Invalid credentials.");
     }
 
-    const passwordHash = await authStore.getPasswordHash(user.id);
+    const passwordHash = await dataStore.getPasswordHash(user.id);
 
     if (!passwordHash || !(await verifyPassword(input.password, passwordHash))) {
-      throw new Error("Invalid credentials.");
+      throw unauthorized("Invalid credentials.");
     }
 
-    await authStore.touchLastLogin(user.id);
-    const currentUser = await authStore.findUserById(user.id);
+    await dataStore.touchUserLogin(user.id);
+    const currentUser = await dataStore.findUserById(user.id);
 
     if (!currentUser) {
-      throw new Error("User could not be loaded after login.");
+      throw unauthorized("User could not be loaded after login.");
     }
 
     return {
