@@ -1,3 +1,4 @@
+// Mongo-shaped records live here so runtime models stay simple elsewhere.
 import { AnalyticsEventType, OnboardingAnalysis, ProductCategory, ShopType, StockStatus, UserRole, UserStatus } from "./types.js";
 
 export const COLLECTIONS = {

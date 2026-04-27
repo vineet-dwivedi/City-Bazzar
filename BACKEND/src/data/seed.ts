@@ -1,3 +1,4 @@
+// Demo data used by memory mode and first-time Mongo seeding.
 import { CatalogProduct, InventoryItem, Shop } from "../types.js";
 
 const now = new Date().toISOString();

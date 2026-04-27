@@ -1,182 +1,109 @@
-# City Bazaar MVP User Flows
+# UrbnBzr MVP User Flows
 
-This document translates the product scope into exact user journeys, frontend screens, and API requirements for the MVP.
+## Purpose
 
-## Step 2 objective
+This doc defines the smallest complete journeys the MVP must support.
 
-Lock the smallest complete journeys that make City Bazaar usable for:
-
-1. A shop owner who wants to digitize inventory quickly
-2. A customer who wants to know which nearby shop has a product
-
-## Flow 1: Shop Owner Journey
+## Flow 1: Shop owner
 
 ### Goal
 
-A shop owner should be able to register, create a shop profile, upload a product image, confirm AI-filled product details, and save inventory successfully.
+An owner should be able to create a shop, add a product with AI help, and see it in inventory.
 
 ### Steps
 
-1. Owner opens the app and chooses `Register as shop owner`
-2. Owner creates account with phone or email and password
-3. Owner creates shop profile with:
-   - shop name
-   - shop type
-   - address
-   - location coordinates
-   - service radius
-4. Owner lands on the shop dashboard
-5. Owner taps `Add product`
-6. Owner uploads a product image
-7. App sends the image to AI onboarding analysis
-8. App shows editable fields:
-   - product name
-   - brand
-   - category
-   - MRP
-   - price
-   - stock quantity
-9. Owner reviews and edits any wrong AI output
-10. Owner confirms and saves
-11. Product is added to shop inventory
-12. Dashboard updates product count and analytics summary
+1. Register with phone or email and password.
+2. Create shop profile with name, type, address, location, and radius.
+3. Open the owner dashboard.
+4. Upload a product image.
+5. Review AI-filled fields.
+6. Edit if needed.
+7. Confirm and save.
+8. See the product in inventory and analytics update.
 
 ### Required screens
 
-- `Owner auth screen`
-- `Shop setup screen`
-- `Owner dashboard`
-- `Add product screen`
-- `AI review and confirm screen`
-- `Inventory list screen`
+- Owner auth
+- Shop setup
+- Owner dashboard
+- Add product
+- AI review and confirm
+- Inventory list
 
-### Required backend actions
+### Required APIs
 
-- Create owner account
-- Authenticate owner
-- Create shop profile
-- Upload product image
-- Run AI analysis
-- Confirm product details
-- Save inventory item
-- Fetch shop dashboard and analytics
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/owner/shop`
+- `GET /api/owner/shop`
+- `GET /api/owner/analytics`
+- `POST /api/onboarding/analyze`
+- `POST /api/onboarding/confirm`
+- `GET /api/owner/inventory`
+- `POST /api/owner/inventory`
+- `PATCH /api/owner/inventory/:productId`
 
-### MVP acceptance criteria
+### Acceptance
 
-- Owner can complete the full flow without admin help
-- AI suggestions are editable before saving
-- Inventory persists after restart
-- Owner can see the newly added product in inventory
+- Owner finishes the flow without admin help
+- AI suggestions are editable
+- Inventory persists in persistent mode
+- Saved product appears immediately in inventory
 
-## Flow 2: Customer Journey
+## Flow 2: Customer
 
 ### Goal
 
-A customer should be able to search for a product and see nearby shops that have it.
+A customer should be able to search for a product, compare nearby shops, and optionally create a pickup request.
 
 ### Steps
 
-1. Customer opens the app
-2. Customer allows location access or enters a location manually
-3. Customer types a product search like `toothpaste`
-4. App fetches nearby matching products and shops
-5. Customer sees result cards with:
-   - product name
-   - shop name
-   - distance
-   - price
-   - stock status
-6. Customer opens a shop detail view if needed
-7. Customer decides which shop to visit
+1. Open the app.
+2. Share location or enter coordinates.
+3. Search for a product like `toothpaste`.
+4. See matching products and nearby shops.
+5. Compare stock, price, and distance.
+6. Open shop detail if needed.
+7. Create a pickup intent for a listed item.
 
 ### Required screens
 
-- `Customer search screen`
-- `Search results screen`
-- `Shop detail screen`
+- Customer search
+- Search results
+- Shop detail
 
-### Required backend actions
+### Required APIs
 
-- Accept location and radius input
-- Search products across nearby shops
-- Return grouped product results with nearby shops
-- Fetch shop details
-- Record view and click analytics
+- `GET /api/search/products`
+- `GET /api/shops`
+- `GET /api/shops/:shopId`
+- `GET /api/catalog`
+- `POST /api/shops/:shopId/events`
+- `POST /api/pickup-intents`
 
-### MVP acceptance criteria
+### Acceptance
 
-- Customer can search without creating an account
-- Search results are relevant to the query
-- Results clearly show nearby options
-- Customer can identify at least one shop choice quickly
+- Search works without customer auth
+- Results are relevant and easy to compare
+- Customer can identify a shop quickly
+- Pickup intent is tied to a real shop product
 
-## Screen Map
+## MVP screen list
 
-The MVP frontend should contain these core screens only:
+1. Owner auth
+2. Shop setup
+3. Owner dashboard
+4. Add product
+5. AI review and confirm
+6. Inventory list
+7. Customer search
+8. Search results
+9. Shop detail
 
-1. `Owner auth`
-2. `Shop setup`
-3. `Owner dashboard`
-4. `Add product`
-5. `AI review and confirm`
-6. `Inventory list`
-7. `Customer search`
-8. `Search results`
-9. `Shop detail`
+## Notes for engineering
 
-Anything beyond these should be treated as post-MVP unless it unblocks the core journeys.
-
-## API Map
-
-| Screen / Action | API | Status |
-| --- | --- | --- |
-| Owner register | `POST /api/auth/register` | Planned |
-| Owner login | `POST /api/auth/login` | Planned |
-| Shop setup | `POST /api/shops/register` | Exists |
-| Fetch owner shop | `GET /api/shops/:shopId` | Exists |
-| Fetch shop analytics | `GET /api/shops/:shopId/analytics` | Exists |
-| Add product image for AI | `POST /api/onboarding/analyze` | Exists |
-| Confirm AI result and save inventory | `POST /api/onboarding/confirm` | Exists |
-| Manual inventory update | `POST /api/shops/:shopId/inventory` | Exists |
-| Customer product search | `GET /api/search/products` | Exists |
-| Customer opens shop detail | `GET /api/shops/:shopId` | Exists |
-| Record product/shop click | `POST /api/shops/:shopId/events` | Exists |
-
-## Data collected in the MVP flows
-
-### Shop owner flow
-
-- owner identity
-- shop profile
-- product images
-- AI suggestions
-- confirmed product metadata
-- inventory quantity
-
-### Customer flow
-
-- search query
-- location or coordinates
-- search result click
-- shop view
-
-## Non-blocking improvements for later
-
-These are useful but should not interrupt Flow 1 or Flow 2:
-
-- customer account creation
-- pickup request
-- saved shops
-- favorites
-- review system
-- notifications
-- advanced ranking
-
-## What Step 2 means for engineering
-
-From this point onward:
-
-1. Backend work should support these exact journeys
-2. Frontend should be built around these exact screens
-3. AI work should focus only on the product onboarding step in the owner journey
-4. Any feature that does not strengthen Flow 1 or Flow 2 should be postponed
+- Owner writes stay under `/api/owner`
+- Public shop routes are read-focused
+- Onboarding confirm requires owner auth
+- Search and pickup intent are the only customer-side MVP actions
+- Any new feature that does not strengthen these two flows is post-MVP

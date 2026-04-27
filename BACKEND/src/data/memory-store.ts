@@ -1,9 +1,11 @@
+// In-memory store keeps local development fast and dependency-free.
 import { randomUUID } from "node:crypto";
 import { createSeedState } from "./seed.js";
-import { CatalogProduct, InventoryItem, Shop, User } from "../types.js";
+import { CatalogProduct, InventoryItem, PickupIntent, Shop, User } from "../types.js";
 import {
   AiOnboardingSessionRecord,
   AnalyticsEventRecord,
+  PickupIntentRecord,
   SearchLogRecord,
   UserRecord
 } from "../persistence.types.js";
@@ -14,6 +16,7 @@ import {
   InventoryItemUpsertInput,
   OnboardingSessionCreateInput,
   OnboardingSessionUpdateInput,
+  PickupIntentCreateInput,
   SearchLogCreateInput,
   ShopProfileUpdateInput,
   ShopRegistrationInput,
@@ -30,6 +33,7 @@ export class MemoryDataStore implements DataStore {
   private readonly onboardingSessions: AiOnboardingSessionRecord[] = [];
   private readonly searchLogs: SearchLogRecord[] = [];
   private readonly analyticsEvents: AnalyticsEventRecord[] = [];
+  private readonly pickupIntents: PickupIntentRecord[] = [];
   private readonly users: UserRecord[] = [];
 
   constructor() {
@@ -43,6 +47,7 @@ export class MemoryDataStore implements DataStore {
     return;
   }
 
+  // User methods
   async createUser(input: UserCreateInput) {
     const now = new Date().toISOString();
     const user: UserRecord = {
@@ -92,6 +97,7 @@ export class MemoryDataStore implements DataStore {
     user.updatedAt = user.lastLoginAt;
   }
 
+  // Shop methods
   async listShops() {
     return this.shops.map((shop) => ({
       ...shop,
@@ -189,6 +195,7 @@ export class MemoryDataStore implements DataStore {
     return { ...shop, analytics: { ...shop.analytics } };
   }
 
+  // Catalog methods
   async listCatalogProducts() {
     return this.catalogProducts.map((product) => ({
       ...product,
@@ -229,6 +236,7 @@ export class MemoryDataStore implements DataStore {
     };
   }
 
+  // Inventory methods
   async listInventoryItems() {
     return this.inventory.map((item) => ({ ...item }));
   }
@@ -289,6 +297,7 @@ export class MemoryDataStore implements DataStore {
     return true;
   }
 
+  // Tracking methods
   async createOnboardingSession(input: OnboardingSessionCreateInput) {
     const now = new Date().toISOString();
     const sessionId = `onb-${randomUUID()}`;
@@ -357,6 +366,52 @@ export class MemoryDataStore implements DataStore {
     });
   }
 
+  async createPickupIntent(input: PickupIntentCreateInput) {
+    const now = new Date().toISOString();
+    const record: PickupIntentRecord = {
+      _id: `pick-${randomUUID()}`,
+      shopId: input.shopId,
+      catalogProductId: input.productId,
+      inventoryItemId: input.inventoryItemId,
+      customerUserId: input.customerUserId,
+      customerName: input.customerName,
+      customerPhone: input.customerPhone,
+      quantityRequested: input.quantityRequested,
+      note: input.note,
+      status: "requested",
+      createdAt: now,
+      updatedAt: now
+    };
+
+    this.pickupIntents.push(record);
+    return this.toPickupIntent(record);
+  }
+
+  async findPickupIntentById(intentId: string) {
+    const record = this.pickupIntents.find((entry) => entry._id === intentId);
+    return record ? this.toPickupIntent(record) : undefined;
+  }
+
+  async listPickupIntentsByShop(shopId: string) {
+    return this.pickupIntents
+      .filter((entry) => entry.shopId === shopId)
+      .map((entry) => this.toPickupIntent(entry))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  }
+
+  async updatePickupIntentStatus(intentId: string, status: PickupIntent["status"]) {
+    const record = this.pickupIntents.find((entry) => entry._id === intentId);
+
+    if (!record) {
+      return undefined;
+    }
+
+    record.status = status;
+    record.updatedAt = new Date().toISOString();
+    return this.toPickupIntent(record);
+  }
+
+  // Small mappers keep returned data detached from in-memory state.
   private toUser(record: UserRecord): User {
     return {
       id: record._id,
@@ -368,6 +423,23 @@ export class MemoryDataStore implements DataStore {
       status: record.status,
       lastLoginAt: record.lastLoginAt,
       createdAt: record.createdAt
+    };
+  }
+
+  private toPickupIntent(record: PickupIntentRecord): PickupIntent {
+    return {
+      id: record._id,
+      shopId: record.shopId,
+      productId: record.catalogProductId,
+      inventoryItemId: record.inventoryItemId,
+      customerUserId: record.customerUserId,
+      customerName: record.customerName,
+      customerPhone: record.customerPhone,
+      quantityRequested: record.quantityRequested,
+      note: record.note,
+      status: record.status,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt
     };
   }
 }

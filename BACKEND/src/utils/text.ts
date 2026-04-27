@@ -1,3 +1,4 @@
+// Text helpers power simple matching without external search tooling.
 export const normalizeText = (value: string) =>
   value
     .toLowerCase()
@@ -26,6 +27,7 @@ export const extractPrice = (value: string) => {
 };
 
 export const scoreAgainstQuery = (query: string, candidates: string[]) => {
+  // Prefer exact match first, then fall back to substring and token overlap.
   const normalizedQuery = normalizeText(query);
 
   if (!normalizedQuery) {

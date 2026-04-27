@@ -1,3 +1,4 @@
+// Onboarding service keeps the MVP AI flow local and easy to swap later.
 import { catalogService } from "./catalog.service.js";
 import { OnboardingAnalysis, ProductCategory } from "../types.js";
 import { dataStore } from "./store.js";
@@ -20,6 +21,7 @@ class OnboardingService {
     manualHint?: string;
     shopId?: string;
   }): Promise<OnboardingAnalysis> {
+    // We combine OCR text, owner hints, and file-name hints into one rough prompt.
     const imageHint = input.imageUrl.split("/").pop()?.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]/g, " ") ?? "";
     const combinedText = [input.rawText, input.manualHint, imageHint].filter(Boolean).join(" ").trim();
     const normalized = normalizeText(combinedText);

@@ -1,3 +1,4 @@
+// Password and token helpers stay isolated from route code.
 import bcrypt from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
 

@@ -1,3 +1,4 @@
+// Geo helpers are tiny on purpose because we only need distance today.
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
 
 export const haversineDistanceKm = (

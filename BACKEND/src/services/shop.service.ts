@@ -1,3 +1,4 @@
+// Shop service holds the main business rules for shops and inventory.
 import {
   AnalyticsEventType,
   ProductCategory,
@@ -45,6 +46,7 @@ class ShopService {
   }
 
   async getShop(shopId: string) {
+    // Public shop reads are enriched with product details for convenience.
     const shop = await dataStore.findShopById(shopId);
 
     if (!shop) {
@@ -110,9 +112,11 @@ class ShopService {
     }
 
     const inventoryCount = (await dataStore.listInventoryByShop(shopId)).length;
+    const pickupIntentCount = (await dataStore.listPickupIntentsByShop(shopId)).length;
     return {
       ...shop.analytics,
-      inventoryCount
+      inventoryCount,
+      pickupIntentCount
     };
   }
 
@@ -211,6 +215,13 @@ class ShopService {
     imageUrl?: string;
     keywords?: string[];
   }) {
+    // Confirm either links an existing catalog product or creates a new one.
+    const shop = await dataStore.findShopById(input.shopId);
+
+    if (!shop) {
+      return null;
+    }
+
     const existingProduct = input.catalogProductId
       ? await catalogService.findById(input.catalogProductId)
       : undefined;

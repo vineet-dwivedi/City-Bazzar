@@ -1,4 +1,5 @@
-import { CatalogProduct, InventoryItem, Shop, User } from "../types.js";
+// Mappers translate between app-facing models and Mongo-shaped records.
+import { CatalogProduct, InventoryItem, PickupIntent, Shop, User } from "../types.js";
 import {
   AddressRecord,
   AiOnboardingSessionRecord,
@@ -6,6 +7,7 @@ import {
   CatalogAlias,
   CatalogProductRecord,
   InventoryItemRecord,
+  PickupIntentRecord,
   SearchLogRecord,
   ShopRecord,
   UserRecord
@@ -146,6 +148,36 @@ export const toInventoryItem = (record: InventoryItemRecord): InventoryItem => (
   mrp: record.mrp,
   imageUrl: record.imageUrls[0],
   lastUpdatedAt: record.updatedAt
+});
+
+export const toPickupIntentRecord = (intent: PickupIntent): PickupIntentRecord => ({
+  _id: intent.id,
+  shopId: intent.shopId,
+  catalogProductId: intent.productId,
+  inventoryItemId: intent.inventoryItemId,
+  customerUserId: intent.customerUserId,
+  customerName: intent.customerName,
+  customerPhone: intent.customerPhone,
+  quantityRequested: intent.quantityRequested,
+  note: intent.note,
+  status: intent.status,
+  createdAt: intent.createdAt,
+  updatedAt: intent.updatedAt
+});
+
+export const toPickupIntent = (record: PickupIntentRecord): PickupIntent => ({
+  id: record._id,
+  shopId: record.shopId,
+  productId: record.catalogProductId,
+  inventoryItemId: record.inventoryItemId,
+  customerUserId: record.customerUserId,
+  customerName: record.customerName,
+  customerPhone: record.customerPhone,
+  quantityRequested: record.quantityRequested,
+  note: record.note,
+  status: record.status,
+  createdAt: record.createdAt,
+  updatedAt: record.updatedAt
 });
 
 export const createSearchLogRecord = (

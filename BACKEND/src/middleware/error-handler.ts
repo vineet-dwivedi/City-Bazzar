@@ -1,4 +1,6 @@
+// Route errors flow through here so handlers can stay small.
 import { NextFunction, Request, Response } from "express";
+import { ApiError } from "../utils/api-error.js";
 
 export const notFoundHandler = (_request: Request, response: Response) => {
   response.status(404).json({
@@ -12,6 +14,13 @@ export const errorHandler = (
   response: Response,
   _next: NextFunction
 ) => {
+  if (error instanceof ApiError) {
+    response.status(error.statusCode).json({
+      message: error.message
+    });
+    return;
+  }
+
   response.status(500).json({
     message: error.message || "Unexpected server error"
   });

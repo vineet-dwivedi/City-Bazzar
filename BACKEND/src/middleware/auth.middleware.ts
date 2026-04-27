@@ -1,9 +1,12 @@
+// Auth middleware keeps bearer-token handling in one place.
 import { NextFunction, Request, Response } from "express";
-import { authStore, AuthUser } from "../services/auth-store.js";
+import { User } from "../types.js";
+import { dataStore } from "../services/store.js";
+import { unauthorized, forbidden } from "../utils/api-error.js";
 import { verifyAuthToken } from "../utils/auth.js";
 
 export interface AuthenticatedRequest extends Request {
-  authUser?: AuthUser;
+  authUser?: User;
 }
 
 export const requireAuth = async (
@@ -11,27 +14,25 @@ export const requireAuth = async (
   response: Response,
   next: NextFunction
 ) => {
-  const authorization = request.header("authorization");
-
-  if (!authorization?.startsWith("Bearer ")) {
-    response.status(401).json({ message: "Authorization token is required." });
-    return;
-  }
-
   try {
+    const authorization = request.header("authorization");
+
+    if (!authorization?.startsWith("Bearer ")) {
+      throw unauthorized("Authorization token is required.");
+    }
+
     const token = authorization.slice("Bearer ".length);
     const payload = verifyAuthToken(token);
-    const user = await authStore.findUserById(payload.sub);
+    const user = await dataStore.findUserById(payload.sub);
 
     if (!user) {
-      response.status(401).json({ message: "User not found for this token." });
-      return;
+      throw unauthorized("User not found for this token.");
     }
 
     request.authUser = user;
     next();
   } catch {
-    response.status(401).json({ message: "Invalid or expired token." });
+    next(unauthorized("Invalid or expired token."));
   }
 };
 
@@ -41,12 +42,12 @@ export const requireShopOwner = (
   next: NextFunction
 ) => {
   if (!request.authUser) {
-    response.status(401).json({ message: "Authentication required." });
+    next(unauthorized("Authentication required."));
     return;
   }
 
   if (request.authUser.role !== "shop_owner" && request.authUser.role !== "admin") {
-    response.status(403).json({ message: "Shop-owner access is required." });
+    next(forbidden("Shop-owner access is required."));
     return;
   }
 

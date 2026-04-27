@@ -1,3 +1,4 @@
+// Shared domain types used by routes, services, and both data stores.
 export type ShopType = "kirana" | "stationery" | "pharmacy" | "general-store";
 export type UserRole = "shop_owner" | "customer" | "admin";
 export type UserStatus = "active" | "pending_verification" | "disabled";
@@ -13,6 +14,12 @@ export type ProductCategory =
 
 export type StockStatus = "in_stock" | "low_stock" | "out_of_stock";
 export type AnalyticsEventType = "view" | "click";
+export type PickupIntentStatus =
+  | "requested"
+  | "acknowledged"
+  | "ready_for_pickup"
+  | "completed"
+  | "cancelled";
 
 export interface ShopAnalytics {
   views: number;
@@ -113,4 +120,19 @@ export interface NearbyShopResult {
 export interface ProductDiscoveryResult {
   product: CatalogProduct;
   nearbyShops: NearbyShopResult[];
+}
+
+export interface PickupIntent {
+  id: string;
+  shopId: string;
+  productId: string;
+  inventoryItemId?: string;
+  customerUserId?: string;
+  customerName: string;
+  customerPhone: string;
+  quantityRequested: number;
+  note?: string;
+  status: PickupIntentStatus;
+  createdAt: string;
+  updatedAt: string;
 }
