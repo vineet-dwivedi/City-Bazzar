@@ -17,15 +17,5 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
-    rules: {
-      // Screen registries keep this UI compact, so we relax this dev-only rule.
-      'react-refresh/only-export-components': 'off',
-    },
-  },
-  {
-    files: ['vite.config.js'],
-    languageOptions: {
-      globals: globals.node,
-    },
   },
 ])
