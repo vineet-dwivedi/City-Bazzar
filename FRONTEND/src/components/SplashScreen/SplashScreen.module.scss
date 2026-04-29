@@ -1,0 +1,50 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.splash {
+  position: fixed; inset: 0; z-index: 999;
+  background: var(--bg);
+  @include flex(column, center, center, 0);
+  padding: $space-8;
+}
+.center { text-align: center; width: 100%; max-width: 340px; }
+.logo {
+  font-size: clamp(2rem, 8vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--primary);
+  line-height: 1;
+  margin-bottom: $space-3;
+}
+.tag {
+  font-size: $font-size-base;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  margin-bottom: $space-6;
+}
+.progressTrack {
+  width: 100%;
+  height: 3px;
+  background: var(--border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.progressBar {
+  height: 100%;
+  background: var(--primary);
+  border-radius: var(--radius-full);
+  transform-origin: left;
+}
+.skeletons {
+  position: absolute;
+  bottom: $space-8;
+  left: $space-8;
+  right: $space-8;
+  @include flex(row, stretch, center, $space-4);
+}
+.skCard {
+  flex: 1;
+  height: 80px;
+  border-radius: var(--radius-md);
+  @include shimmer;
+}

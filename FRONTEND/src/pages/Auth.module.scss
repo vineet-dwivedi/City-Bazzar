@@ -1,0 +1,89 @@
+@use '../styles/variables' as *;
+@use '../styles/mixins' as *;
+
+.authWrap {
+  min-height: 100vh;
+  @include flex-center;
+  background: var(--bg);
+  padding: $space-4;
+}
+
+.container, .roleSelection {
+  width: 100%; max-width: 900px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex; overflow: hidden;
+  border: 1px solid var(--border);
+  min-height: 500px;
+
+  @include max-md { flex-direction: column; }
+}
+
+.roleSelection {
+  max-width: 600px;
+  flex-direction: column;
+}
+
+.brandPanel {
+  flex: 1;
+  background: var(--primary-bg);
+  @include flex(column, center, center, $space-2);
+  padding: $space-8;
+  text-align: center;
+  position: relative; overflow: hidden;
+
+  &::before {
+    content: ''; position: absolute; inset: 0;
+    background-image: radial-gradient(var(--primary) 1px, transparent 1px);
+    background-size: 20px 20px; opacity: 0.1;
+  }
+}
+
+.logo { font-size: $font-size-4xl; font-weight: 800; color: var(--primary); letter-spacing: -0.04em; position: relative; z-index: 1;}
+.tag { font-size: $font-size-md; color: var(--text); position: relative; z-index: 1;}
+
+.formPanel, .roles {
+  flex: 1.2;
+  padding: $space-8;
+  @include flex(column, center, center, 0);
+}
+
+.formInner {
+  width: 100%; max-width: 360px;
+  h2 { font-size: $font-size-2xl; margin-bottom: 4px; }
+  .sub { color: var(--text-muted); margin-bottom: $space-6; font-size: $font-size-sm; }
+}
+
+.form {
+  @include flex(column, stretch, flex-start, $space-4);
+  width: 100%;
+}
+
+.footer {
+  margin-top: $space-6;
+  text-align: center; font-size: $font-size-sm; color: var(--text-muted);
+  span { color: var(--primary); font-weight: 600; cursor: pointer; &:hover { text-decoration: underline; } }
+}
+
+.roles {
+  @include flex(column, stretch, center, $space-4);
+  width: 100%; padding: $space-6;
+}
+
+.roleCard {
+  @include card;
+  text-align: left; padding: $space-5;
+  transition: var(--transition);
+  &:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  h3 { font-size: $font-size-lg; margin-bottom: 4px; }
+  p { font-size: $font-size-sm; color: var(--text-muted); }
+}
+
+.roleIcon { color: var(--primary); margin-bottom: $space-3; }
+
+.devBypass {
+  margin-top: $space-8; padding-top: $space-4; border-top: 1px dashed var(--border);
+  p { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
+}
+.bpBtns { @include flex(row, center, center, 8px); }

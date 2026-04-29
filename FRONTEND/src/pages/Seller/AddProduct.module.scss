@@ -1,0 +1,44 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.page { display: flex; flex-direction: column; gap: $space-6; }
+.title { font-size: $font-size-2xl; font-weight: 700; }
+
+.grid {
+  display: grid; grid-template-columns: 1fr 400px; gap: $space-6;
+  align-items: start;
+  @include max-lg { grid-template-columns: 1fr; }
+}
+
+.uploadZone {
+  width: 100%; aspect-ratio: 4/3;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  position: relative; overflow: hidden;
+  transition: var(--transition);
+  background: var(--surface);
+  &:hover { border-color: var(--primary); background: var(--bg); }
+  &.hasFile { border: none; }
+}
+.uploadEmpty {
+  @include flex(column, center, center, $space-3);
+  position: absolute; inset: 0;
+  padding: $space-6; text-align: center;
+}
+.upIcon { color: var(--text-muted); margin-bottom: $space-2; }
+.upText { font-size: $font-size-md; font-weight: 500; color: var(--text); }
+.fileInput { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.previewImg { width: 100%; height: 100%; object-fit: cover; }
+
+.formCard { @include flex(column, stretch, flex-start, $space-4); }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: $space-4; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.label { font-size: $font-size-sm; font-weight: 500; color: var(--text); }
+.textarea {
+  width: 100%; padding: 12px; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); font-family: inherit;
+  font-size: $font-size-base; background: var(--surface); color: var(--text);
+  resize: vertical; outline: none; transition: var(--transition);
+  &:focus { border-color: var(--primary); }
+}
+.hint { font-size: $font-size-xs; color: var(--text-muted); text-align: center; margin-top: -6px; }

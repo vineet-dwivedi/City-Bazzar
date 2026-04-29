@@ -1,0 +1,66 @@
+@use 'variables' as *;
+
+// ─── Responsive Breakpoints ──────────────────────────────────────────────────
+@mixin sm { @media (min-width: #{$bp-sm}) { @content; } }
+@mixin md { @media (min-width: #{$bp-md}) { @content; } }
+@mixin lg { @media (min-width: #{$bp-lg}) { @content; } }
+@mixin xl { @media (min-width: #{$bp-xl}) { @content; } }
+@mixin max-md { @media (max-width: #{$bp-md - 1px}) { @content; } }
+@mixin max-lg { @media (max-width: #{$bp-lg - 1px}) { @content; } }
+
+// ─── Flex Helpers ────────────────────────────────────────────────────────────
+@mixin flex($dir: row, $align: center, $justify: flex-start, $gap: 0) {
+  display: flex;
+  flex-direction: $dir;
+  align-items: $align;
+  justify-content: $justify;
+  @if $gap != 0 { gap: $gap; }
+}
+
+@mixin flex-center { display: flex; align-items: center; justify-content: center; }
+@mixin flex-between { display: flex; align-items: center; justify-content: space-between; }
+
+// ─── Card ────────────────────────────────────────────────────────────────────
+@mixin card($radius: var(--radius-md), $pad: #{$space-5}) {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: $radius;
+  padding: $pad;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+@mixin card-hover {
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+// ─── Typography ──────────────────────────────────────────────────────────────
+@mixin text($size, $weight: 400, $color: var(--text)) {
+  font-size: $size;
+  font-weight: $weight;
+  color: $color;
+}
+
+@mixin truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+// ─── Skeleton Shimmer ────────────────────────────────────────────────────────
+@mixin shimmer {
+  background: linear-gradient(90deg, var(--border) 25%, rgba(255,255,255,0.3) 50%, var(--border) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+// ─── Scrollbar ───────────────────────────────────────────────────────────────
+@mixin thin-scrollbar {
+  &::-webkit-scrollbar { width: 4px; height: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+}
