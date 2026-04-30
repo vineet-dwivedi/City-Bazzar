@@ -10,12 +10,14 @@ export default function SplashScreen({ onDone }) {
   const containerRef = useRef();
 
   useEffect(() => {
-    const tl = gsap.timeline({ onComplete: () => onDone?.() });
-    tl.fromTo(logoRef.current, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.7, ease: 'power3.out' })
-      .fromTo(tagRef.current, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.4 }, '-=0.2')
-      .fromTo(barRef.current, { scaleX: 0 }, { scaleX: 1, duration: 1.1, ease: 'power2.inOut', transformOrigin: 'left' }, '-=0.1')
-      .to(containerRef.current, { opacity: 0, duration: 0.35, delay: 0.3, ease: 'power2.in' });
-    return () => tl.kill();
+    let ctx = gsap.context(() => {
+      const tl = gsap.timeline({ onComplete: () => onDone?.() });
+      tl.fromTo(logoRef.current, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.7, ease: 'power3.out' })
+        .fromTo(tagRef.current, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.4 }, '-=0.2')
+        .fromTo(barRef.current, { scaleX: 0 }, { scaleX: 1, duration: 1.1, ease: 'power2.inOut', transformOrigin: 'left' }, '-=0.1')
+        .to(containerRef.current, { opacity: 0, duration: 0.35, delay: 0.3, ease: 'power2.in' });
+    });
+    return () => ctx.revert();
   }, []);
 
   return (

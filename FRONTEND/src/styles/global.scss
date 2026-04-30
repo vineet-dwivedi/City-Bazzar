@@ -9,6 +9,8 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   scroll-behavior: smooth;
+  ::-webkit-scrollbar {display: none;}
+  overflow-y: scroll;
 }
 
 body {
@@ -25,6 +27,22 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 input, textarea, select { font-family: inherit; outline: none; }
 img { max-width: 100%; display: block; }
 ul, ol { list-style: none; }
+
+html.lenis, html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
 
 // ─── Utility Classes ─────────────────────────────────────────────────────────
 .text-primary    { color: var(--primary); }

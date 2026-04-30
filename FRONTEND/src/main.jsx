@@ -17,6 +17,9 @@ import { AppLayout, DashboardLayout } from './layouts/Layouts.jsx';
 import SplashScreen from './components/SplashScreen/SplashScreen.jsx';
 import Auth from './pages/Auth.jsx';
 import BuyerHome from './pages/Buyer/BuyerHome.jsx';
+import BuyerSearch from './pages/Buyer/BuyerSearch.jsx';
+import BuyerProfile from './pages/Buyer/BuyerProfile.jsx';
+import ShopDetail from './pages/Buyer/ShopDetail.jsx';
 import SellerDashboard from './pages/Seller/Dashboard.jsx';
 import AddProduct from './pages/Seller/AddProduct.jsx';
 import Inventory from './pages/Seller/Inventory.jsx';
@@ -45,7 +48,7 @@ function App() {
   }
 
   return (
-    <ReactLenis root>
+    <ReactLenis root options={{ lerp: 0.1, duration: 1.5, smoothWheel: true }}>
       <Routes>
         {/* Public Routes */}
         <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
@@ -54,8 +57,9 @@ function App() {
         <Route path="/" element={<ProtectedRoute allowedRoles={['buyer']}><AppLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/buyer" />} />
           <Route path="buyer" element={<BuyerHome />} />
-          <Route path="search" element={<div className="page-enter"><h2>Search Results</h2></div>} />
-          <Route path="profile" element={<div className="page-enter"><h2>Profile</h2></div>} />
+          <Route path="search" element={<BuyerSearch />} />
+          <Route path="shop/:shopId" element={<ShopDetail />} />
+          <Route path="profile" element={<BuyerProfile />} />
         </Route>
 
         {/* Seller Routes (Dashboard Layout) */}

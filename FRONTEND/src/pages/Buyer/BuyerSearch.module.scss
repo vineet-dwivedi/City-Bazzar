@@ -1,0 +1,174 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.searchPage {
+  @include flex(column, stretch, flex-start, $space-6);
+  padding: $space-4;
+
+  @include max-md {
+    padding: 0;
+  }
+}
+
+.searchHeader {
+  @include flex(column, stretch, flex-start, $space-4);
+
+  h1 {
+    font-size: $font-size-2xl;
+    color: var(--text);
+  }
+
+  .searchBox {
+    position: relative;
+    width: 100%;
+
+    .searchIcon {
+      position: absolute;
+      left: $space-4;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    input {
+      width: 100%;
+      padding: $space-4 $space-4 $space-4 50px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: $font-size-lg;
+      transition: all 0.2s ease;
+
+      &:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-bg);
+      }
+    }
+
+    .filterBtn {
+      position: absolute;
+      right: $space-4;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: var(--radius-sm);
+
+      &:hover {
+        color: var(--primary);
+        background: var(--bg);
+      }
+    }
+  }
+
+  .quickFilters {
+    @include flex(row, center, flex-start, $space-2);
+    overflow-x: auto;
+    padding-bottom: $space-2;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+
+    .chip {
+      padding: 8px 16px;
+      border-radius: 100px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: $font-size-sm;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      @include flex(row, center, center, 6px);
+
+      &:hover, &.active {
+        background: var(--text);
+        color: var(--surface);
+        border-color: var(--text);
+      }
+    }
+  }
+}
+
+.resultsSection {
+  @include flex(column, stretch, flex-start, $space-4);
+
+  h2 {
+    font-size: $font-size-xl;
+    color: var(--text);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: $space-4;
+    
+    @include max-md {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: $space-3;
+    }
+  }
+}
+
+.productCard {
+  @include card;
+  padding: $space-4;
+  @include flex(column, stretch, flex-start, $space-3);
+  cursor: pointer;
+
+  @include max-md {
+    padding: $space-3;
+  }
+
+  .imagePlaceholder {
+    width: 100%;
+    aspect-ratio: 1;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    @include flex(column, center, center);
+    color: var(--text-muted);
+    
+    svg { opacity: 0.5; margin-bottom: $space-2; }
+  }
+
+  .info {
+    @include flex(column, stretch, flex-start, 4px);
+    flex: 1;
+
+    h3 {
+      font-size: $font-size-md;
+      color: var(--text);
+      @include truncate;
+    }
+
+    .shop {
+      font-size: $font-size-sm;
+      color: var(--text-muted);
+    }
+  }
+
+  .footer {
+    @include flex(row, center, space-between);
+    margin-top: auto;
+
+    .price {
+      font-weight: 600;
+      color: var(--text);
+      font-size: $font-size-md;
+    }
+
+    .dist {
+      font-size: $font-size-xs;
+      color: var(--text-muted);
+      @include flex(row, center, center, 4px);
+      background: var(--bg);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+    }
+  }
+}

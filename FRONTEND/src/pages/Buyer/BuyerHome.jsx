@@ -12,6 +12,22 @@ const TRENDING = [
   { id: 2, name: 'Minimalist Desk Lamp', shop: 'Lumina Home', dist: '0.8 km', price: '₹1,299', stock: true },
   { id: 3, name: 'Yoga Mat', shop: 'FitGear', dist: '2.1 km', price: '₹899', stock: false },
   { id: 4, name: 'Mechanical Keyboard', shop: 'TechZone', dist: '1.2 km', price: '₹6,499', stock: true },
+  { id: 5, name: 'Kindle Paperwhite', shop: 'ReadEasy', dist: '3.4 km', price: '₹13,999', stock: true },
+  { id: 6, name: 'Coffee Beans (Arabica)', shop: 'Brew Bros', dist: '0.5 km', price: '₹450', stock: true },
+  { id: 7, name: 'Dumbbell Set 5kg', shop: 'FitGear', dist: '2.1 km', price: '₹1,800', stock: true },
+  { id: 8, name: 'Logitech MX Master 3S', shop: 'TechZone', dist: '1.2 km', price: '₹8,995', stock: false },
+  { id: 9, name: 'Organic Honey 500g', shop: 'Nature Fresh', dist: '1.5 km', price: '₹320', stock: true },
+  { id: 10, name: 'Wireless Charger Pad', shop: 'TechZone', dist: '1.2 km', price: '₹1,499', stock: true },
+  { id: 11, name: 'Running Shoes', shop: 'FitGear', dist: '2.1 km', price: '₹3,500', stock: true },
+  { id: 12, name: 'Smart Plant Pot', shop: 'Lumina Home', dist: '0.8 km', price: '₹899', stock: true },
+  { id: 13, name: 'Leather Wallet', shop: 'Urban Trends', dist: '1.9 km', price: '₹1,199', stock: true },
+  { id: 14, name: 'Noise Cancelling Earbuds', shop: 'TechZone', dist: '1.2 km', price: '₹4,999', stock: false },
+  { id: 15, name: 'Green Tea Leaves', shop: 'Brew Bros', dist: '0.5 km', price: '₹299', stock: true },
+  { id: 16, name: 'Ceramic Coffee Mug', shop: 'Lumina Home', dist: '0.8 km', price: '₹399', stock: true },
+  { id: 17, name: 'Protein Powder 1kg', shop: 'FitGear', dist: '2.1 km', price: '₹2,499', stock: true },
+  { id: 18, name: 'Bluetooth Speaker', shop: 'TechZone', dist: '1.2 km', price: '₹2,199', stock: true },
+  { id: 19, name: 'Handmade Soap Set', shop: 'Nature Fresh', dist: '1.5 km', price: '₹450', stock: true },
+  { id: 20, name: 'Laptop Backpack', shop: 'Urban Trends', dist: '1.9 km', price: '₹1,899', stock: true },
 ];
 
 export default function BuyerHome() {
@@ -62,7 +78,7 @@ export default function BuyerHome() {
                 )}
               </div>
               <Button fullWidth size="sm" className={styles.ctaBtn} 
-                onClick={(e) => { e.stopPropagation(); navigate('/request-pickup'); }}>
+                onClick={(e) => { e.stopPropagation(); navigate(`/shop/techzone`); }}>
                 Request Pickup
               </Button>
             </div>
