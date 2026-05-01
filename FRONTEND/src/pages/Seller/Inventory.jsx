@@ -86,7 +86,10 @@ export default function Inventory() {
     };
   }, []);
 
-  const inventoryItems = shop?.inventory?.filter((item) => item.product) || [];
+  const inventoryItems = useMemo(
+    () => shop?.inventory?.filter((item) => item.product) || [],
+    [shop]
+  );
   const filteredItems = useMemo(() => (
     inventoryItems.filter((item) => {
       const matchesFilter =

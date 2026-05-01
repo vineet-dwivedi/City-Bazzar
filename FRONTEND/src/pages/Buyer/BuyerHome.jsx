@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { MapPin, SlidersHorizontal, Map } from 'lucide-react';
+import { MapPin, SlidersHorizontal, Map as MapIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card/Card';
 import Button from '../../components/ui/Button/Button';
@@ -128,7 +128,7 @@ export default function BuyerHome() {
           </p>
         </div>
         <div className={styles.headerActions}>
-          <Button variant="outline" size="sm" icon={<Map size={14} />} disabled>Map View</Button>
+          <Button variant="outline" size="sm" icon={<MapIcon size={14} />} disabled>Map View</Button>
           <Button variant="outline" size="sm" icon={<SlidersHorizontal size={14} />} disabled>Filters</Button>
         </div>
       </div>

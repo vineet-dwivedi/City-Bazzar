@@ -9,8 +9,22 @@ import { getHomePath } from '../lib/routes.js';
 
 const EMPTY_FORM = {
   fullName: '',
+  identifier: '',
   email: '',
+  phone: '',
   password: '',
+};
+
+const resolveIdentifier = (identifier) => {
+  const value = identifier.trim();
+
+  if (!value) {
+    return { email: '', phone: '' };
+  }
+
+  return value.includes('@')
+    ? { email: value.toLowerCase(), phone: '' }
+    : { email: '', phone: value };
 };
 
 export default function Auth() {
@@ -37,17 +51,28 @@ export default function Auth() {
     setSubmitting(true);
 
     try {
-      const trimmedEmail = form.email.trim();
-      const payload = {
-        email: trimmedEmail,
-        password: form.password,
-      };
+      const trimmedEmail = form.email.trim().toLowerCase();
+      const trimmedPhone = form.phone.trim();
+      const identifier = resolveIdentifier(form.identifier);
+
+      if (isLogin && !identifier.email && !identifier.phone) {
+        throw new Error('Enter your email or phone number to continue.');
+      }
+
+      if (!isLogin && !trimmedEmail && !trimmedPhone) {
+        throw new Error('Add at least an email or a phone number to create your account.');
+      }
 
       const account = isLogin
-        ? await login(payload)
+        ? await login({
+            email: identifier.email,
+            phone: identifier.phone,
+            password: form.password,
+          })
         : await register({
             fullName: form.fullName.trim(),
             email: trimmedEmail,
+            phone: trimmedPhone,
             password: form.password,
             role: role || 'buyer',
           });
@@ -112,14 +137,31 @@ export default function Auth() {
                   required
                 />
               )}
-              <Input
-                label="Email"
-                type="email"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={updateField('email')}
-                required
-              />
+              {isLogin ? (
+                <Input
+                  label="Email or Phone"
+                  placeholder="you@example.com or +91 98765 12345"
+                  value={form.identifier}
+                  onChange={updateField('identifier')}
+                  required
+                />
+              ) : (
+                <>
+                  <Input
+                    label="Email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={form.email}
+                    onChange={updateField('email')}
+                  />
+                  <Input
+                    label="Phone"
+                    placeholder="+91 98765 12345"
+                    value={form.phone}
+                    onChange={updateField('phone')}
+                  />
+                </>
+              )}
               <Input
                 label="Password"
                 type="password"

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { authApi, setAuthToken } from '../lib/api.js';
 import { normalizeRole } from '../lib/routes.js';
 
@@ -130,7 +130,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(STORAGE_KEY);
   };
 
-  const value = useMemo(() => ({
+  const value = {
     user,
     token,
     loading,
@@ -138,7 +138,7 @@ export function AuthProvider({ children }) {
     register,
     refreshUser,
     logout,
-  }), [loading, token, user]);
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

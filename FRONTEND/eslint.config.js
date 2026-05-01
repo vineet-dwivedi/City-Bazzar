@@ -17,5 +17,17 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Current app flow uses a few controlled sync hydration patterns.
+      'react-hooks/set-state-in-effect': 'off',
+      // This repo exports hooks/helpers from component-adjacent files.
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: ['vite.config.js'],
+    languageOptions: {
+      globals: globals.node,
+    },
   },
 ])

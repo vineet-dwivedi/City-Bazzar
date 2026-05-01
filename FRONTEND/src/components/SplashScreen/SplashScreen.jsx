@@ -18,7 +18,7 @@ export default function SplashScreen({ onDone }) {
         .to(containerRef.current, { opacity: 0, duration: 0.35, delay: 0.3, ease: 'power2.in' });
     });
     return () => ctx.revert();
-  }, []);
+  }, [onDone]);
 
   return (
     <div className={styles.splash} ref={containerRef}>
