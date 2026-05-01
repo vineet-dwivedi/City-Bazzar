@@ -1,0 +1,90 @@
+// ─── URBNBZR Design Tokens ───────────────────────────────────────────────────
+
+// Light Mode
+$color-bg:           #F7F7F5;
+$color-surface:      #FFFFFF;
+$color-text:         #1A1A1A;
+$color-text-muted:   #6B7280;
+$color-primary:      #3A7D6D;
+$color-primary-dark: #2E6459;
+$color-primary-bg:   #EBF5F2;
+$color-accent:       #F59E0B;
+$color-border:       #E5E7EB;
+$color-success:      #22C55E;
+$color-warning:      #F59E0B;
+$color-error:        #EF4444;
+
+// Dark Mode
+$color-dark-bg:      #0F1110;
+$color-dark-surface: #171A18;
+$color-dark-text:    #E5E7EB;
+$color-dark-muted:   #9CA3AF;
+$color-dark-primary: #4FA38A;
+$color-dark-border:  #2D3330;
+
+// CSS Custom Properties (theme-aware)
+:root {
+  --bg:           #{$color-bg};
+  --surface:      #{$color-surface};
+  --text:         #{$color-text};
+  --text-muted:   #{$color-text-muted};
+  --primary:      #{$color-primary};
+  --primary-dark: #{$color-primary-dark};
+  --primary-bg:   #{$color-primary-bg};
+  --accent:       #{$color-accent};
+  --border:       #{$color-border};
+  --success:      #{$color-success};
+  --warning:      #{$color-warning};
+  --error:        #{$color-error};
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:    0 4px 12px rgba(0,0,0,0.10);
+  --shadow-lg:    0 8px 24px rgba(0,0,0,0.12);
+  --radius-sm:    8px;
+  --radius-md:    10px;
+  --radius-lg:    14px;
+  --radius-full:  9999px;
+  --transition:   all 0.2s ease;
+}
+
+[data-theme="dark"] {
+  --bg:           #{$color-dark-bg};
+  --surface:      #{$color-dark-surface};
+  --text:         #{$color-dark-text};
+  --text-muted:   #{$color-dark-muted};
+  --primary:      #{$color-dark-primary};
+  --primary-dark: #3d8a73;
+  --primary-bg:   rgba(79,163,138,0.12);
+  --border:       #{$color-dark-border};
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md:    0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg:    0 8px 24px rgba(0,0,0,0.5);
+}
+
+// Typography
+$font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+$font-size-xs:  12px;
+$font-size-sm:  13px;
+$font-size-base:14px;
+$font-size-md:  16px;
+$font-size-lg:  18px;
+$font-size-xl:  20px;
+$font-size-2xl: 24px;
+$font-size-3xl: 28px;
+$font-size-4xl: 36px;
+
+// Spacing
+$space-1:  4px;
+$space-2:  8px;
+$space-3:  12px;
+$space-4:  16px;
+$space-5:  20px;
+$space-6:  24px;
+$space-8:  32px;
+$space-10: 40px;
+$space-12: 48px;
+
+// Breakpoints
+$bp-sm:   480px;
+$bp-md:   768px;
+$bp-lg:   1024px;
+$bp-xl:   1280px;

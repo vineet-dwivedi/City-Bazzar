@@ -1,0 +1,224 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.profile {
+  @include flex(column, stretch, flex-start, $space-6);
+  padding: $space-4;
+
+  @include max-md {
+    padding: 0;
+  }
+}
+
+.header {
+  @include card;
+  @include flex(row, center, flex-start, $space-4);
+  padding: $space-6;
+  position: relative;
+  overflow: hidden;
+
+  .avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--primary);
+    @include flex(row, center, center);
+    color: var(--surface);
+    font-size: $font-size-xl;
+    font-weight: 600;
+  }
+
+  .info {
+    @include flex(column, flex-start, center, $space-1);
+    z-index: 1;
+
+    h1 {
+      font-size: $font-size-2xl;
+      color: var(--text);
+    }
+    p {
+      color: var(--text-muted);
+      font-size: $font-size-md;
+    }
+  }
+
+  .editBtn {
+    position: absolute;
+    top: $space-4;
+    right: $space-4;
+    padding: $space-2;
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+  }
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $space-4;
+
+  @include max-md {
+    grid-template-columns: 1fr;
+  }
+
+  .statCard {
+    @include card;
+    @include flex(column, center, center, $space-2);
+    padding: $space-4;
+    text-align: center;
+
+    .iconWrapper {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--primary-bg);
+      color: var(--primary);
+      @include flex(row, center, center);
+      margin-bottom: $space-2;
+    }
+
+    h3 {
+      font-size: $font-size-xl;
+      color: var(--text);
+    }
+
+    p {
+      font-size: $font-size-sm;
+      color: var(--text-muted);
+    }
+  }
+}
+
+.section {
+  @include flex(column, stretch, flex-start, $space-4);
+
+  .sectionHeader {
+    @include flex(row, center, space-between);
+    
+    h2 {
+      font-size: $font-size-xl;
+      color: var(--text);
+    }
+
+    .viewAll {
+      color: var(--primary);
+      font-size: $font-size-sm;
+      font-weight: 500;
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .activityList {
+    @include card;
+    padding: 0;
+    overflow: hidden;
+
+    .activityItem {
+      @include flex(row, center, space-between);
+      padding: $space-4;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s ease;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background: var(--bg);
+      }
+
+      .left {
+        @include flex(row, center, flex-start, $space-3);
+
+        .icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: var(--bg);
+          @include flex(row, center, center);
+          color: var(--text-muted);
+        }
+
+        .details {
+          @include flex(column, flex-start, center, 4px);
+          
+          h4 {
+            color: var(--text);
+            font-size: $font-size-md;
+          }
+          p {
+            color: var(--text-muted);
+            font-size: $font-size-sm;
+          }
+        }
+      }
+
+      .right {
+        text-align: right;
+
+        .status {
+          font-size: $font-size-sm;
+          font-weight: 500;
+          padding: 4px 8px;
+          border-radius: var(--radius-sm);
+          background: var(--bg);
+          color: var(--text-muted);
+
+          &.completed {
+            background: rgba(58, 125, 109, 0.1);
+            color: var(--primary);
+          }
+          
+          &.pending {
+            background: rgba(245, 166, 35, 0.1);
+            color: #f5a623;
+          }
+        }
+      }
+    }
+  }
+}
+
+.settingsList {
+  @include card;
+  padding: 0;
+
+  .settingItem {
+    @include flex(row, center, space-between);
+    padding: $space-4;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.2s ease;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: var(--bg);
+    }
+
+    .left {
+      @include flex(row, center, flex-start, $space-3);
+      color: var(--text);
+    }
+
+    .right {
+      color: var(--text-muted);
+    }
+  }
+}

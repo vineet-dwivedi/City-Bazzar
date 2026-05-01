@@ -1,0 +1,48 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.dashboard { display: flex; flex-direction: column; gap: $space-6; }
+.header { @include flex-between; }
+.title { font-size: $font-size-2xl; font-weight: 700; }
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: $space-4;
+  @include max-md { grid-template-columns: 1fr 1fr; }
+}
+.kpiCard { padding: $space-4; }
+.kpiTop { @include flex-between; margin-bottom: $space-3; }
+.iconWrap { 
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  background: var(--primary-bg); color: var(--primary);
+  @include flex-center;
+}
+.trend { @include flex(row, center, flex-start, 4px); font-size: $font-size-xs; font-weight: 600; }
+.kpiValue { font-size: $font-size-3xl; font-weight: 700; line-height: 1.1; margin-bottom: 2px; }
+.kpiLabel { font-size: $font-size-sm; color: var(--text-muted); }
+
+.quickActions {
+  @include flex(row, center, flex-start, $space-3);
+  overflow-x: auto; padding-bottom: 4px;
+  @include thin-scrollbar;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-6;
+  @include max-lg { grid-template-columns: 1fr; }
+}
+.section { padding: $space-4; }
+.sectionTitle { font-size: $font-size-lg; font-weight: 600; margin-bottom: $space-4; }
+.list { @include flex(column, stretch, flex-start, 0); }
+.listItem {
+  @include flex(row, center, flex-start, $space-3);
+  padding: $space-3 0;
+  border-bottom: 1px solid var(--border);
+  &:last-child { border-bottom: none; padding-bottom: 0; }
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+.listText { flex: 1; font-size: $font-size-sm; color: var(--text); }
+.listTime { font-size: $font-size-xs; color: var(--text-muted); white-space: nowrap; }

@@ -1,0 +1,39 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 200;
+}
+.modal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  z-index: 201;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 90%;
+
+  &--sm { max-width: 400px; }
+  &--md { max-width: 560px; }
+  &--lg { max-width: 760px; }
+}
+.header {
+  @include flex-between;
+  padding: $space-5 $space-6;
+  border-bottom: 1px solid var(--border);
+}
+.title { font-size: $font-size-lg; font-weight: 600; color: var(--text); }
+.close {
+  @include flex-center;
+  width: 32px; height: 32px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  transition: var(--transition);
+  cursor: pointer;
+  &:hover { background: var(--border); color: var(--text); }
+}
+.body { padding: $space-6; }

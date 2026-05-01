@@ -1,0 +1,56 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.btn {
+  @include flex(row, center, center, 6px);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-family: $font-primary;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+
+  &:active { transform: scale(0.98); }
+
+  // ─── Variants ────────────────────────────────────────────────────────
+  &--primary {
+    background: var(--primary);
+    color: #fff;
+    &:hover:not(:disabled) { background: var(--primary-dark); transform: scale(1.02); }
+  }
+  &--outline {
+    background: transparent;
+    border-color: var(--primary);
+    color: var(--primary);
+    &:hover:not(:disabled) { background: var(--primary-bg); }
+  }
+  &--ghost {
+    background: transparent;
+    color: var(--text-muted);
+    &:hover:not(:disabled) { background: var(--border); color: var(--text); }
+  }
+  &--danger {
+    background: transparent;
+    border-color: var(--error);
+    color: var(--error);
+    &:hover:not(:disabled) { background: rgba(239,68,68,0.1); }
+  }
+  &--surface {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
+    &:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+  }
+
+  // ─── Sizes ───────────────────────────────────────────────────────────
+  &--sm  { padding: 6px 12px; font-size: $font-size-sm; }
+  &--md  { padding: 9px 18px; font-size: $font-size-base; }
+  &--lg  { padding: 12px 24px; font-size: $font-size-md; }
+
+  &--full { width: 100%; justify-content: center; }
+
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .icon { display: flex; align-items: center; line-height: 1; }
+}

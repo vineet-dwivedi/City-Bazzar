@@ -1,0 +1,103 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.page { display: flex; flex-direction: column; gap: $space-6; }
+.backBtn {
+  @include flex(row, center, flex-start, $space-1);
+  color: var(--text-muted); font-size: $font-size-sm; font-weight: 500;
+  width: fit-content; transition: var(--transition);
+  &:hover { color: var(--text); }
+}
+
+.header {
+  @include flex(column, stretch, flex-start, 0);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.coverImg {
+  height: 160px; background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  position: relative;
+}
+.shopAvatar {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: var(--surface); color: var(--primary);
+  font-size: $font-size-2xl; font-weight: 700;
+  @include flex-center;
+  border: 4px solid var(--bg);
+  position: absolute; bottom: -40px; left: $space-6;
+}
+.info {
+  padding: $space-6; padding-top: 50px;
+  @include flex(column, flex-start, flex-start, $space-3);
+}
+.shopName { font-size: $font-size-2xl; font-weight: 700; line-height: 1.2; }
+.meta, .meta2 { @include flex(row, center, flex-start, $space-4); flex-wrap: wrap; gap: $space-3 $space-4; }
+.metaItem { @include flex(row, center, flex-start, 6px); font-size: $font-size-sm; color: var(--text-muted); }
+.actions { margin-top: $space-2; }
+
+.inventory { margin-top: $space-4; }
+.sectionTitle { font-size: $font-size-xl; font-weight: 700; margin-bottom: $space-4; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: $space-4;
+}
+.productCard { display: flex; flex-direction: column; gap: $space-3; }
+.imgWrap {
+  width: 100%; aspect-ratio: 1; border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+.placeholderImg {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.08));
+}
+.pInfo { flex: 1; display: flex; flex-direction: column; gap: $space-2; }
+.pName { font-size: $font-size-sm; font-weight: 600; @include truncate; margin-bottom: 2px; }
+.pMeta { @include flex-between; margin-bottom: $space-3; margin-top: auto; }
+.price { font-weight: 700; color: var(--text); }
+
+// Modal Flow
+.requestFlow { @include flex(column, stretch, flex-start, $space-5); }
+.reqProduct {
+  @include flex(row, center, flex-start, $space-3);
+  padding: $space-3; background: var(--bg); border-radius: var(--radius-md);
+}
+.reqImg { width: 50px; height: 50px; border-radius: var(--radius-sm); background: var(--border); }
+.reqName { font-weight: 600; }
+.reqPrice { font-size: $font-size-sm; color: var(--text-muted); }
+
+.reqForm { @include flex(column, stretch, flex-start, $space-4); }
+.label { font-size: $font-size-sm; font-weight: 500; color: var(--text); margin-bottom: 6px; display: block; }
+.textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: $font-size-base;
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+  transition: var(--transition);
+
+  &:focus {
+    border-color: var(--primary);
+  }
+}
+.etaGrid { display: grid; grid-template-columns: 1fr 1fr; gap: $space-2; }
+.etaBtn {
+  padding: 10px; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); font-size: $font-size-sm;
+  color: var(--text); background: var(--surface); transition: var(--transition);
+  &:hover { border-color: var(--primary); }
+  &.active { border-color: var(--primary); background: var(--primary-bg); color: var(--primary); font-weight: 500; }
+}
+
+.successState {
+  @include flex(column, center, center, $space-3);
+  text-align: center; padding: $space-4 0;
+  h2 { font-size: $font-size-xl; font-weight: 700; color: var(--text); margin-top: $space-2; }
+  p { font-size: $font-size-sm; color: var(--text-muted); }
+}

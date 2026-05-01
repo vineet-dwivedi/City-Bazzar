@@ -1,0 +1,105 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+// ─── Desktop Sidebar ──────────────────────────────────────────────────────────
+.sidebar {
+  width: 240px;
+  height: 100vh;
+  position: sticky; top: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  @include flex(column, stretch, flex-start, 0);
+  flex-shrink: 0;
+  overflow-y: auto;
+  @include thin-scrollbar;
+
+  @include max-lg { display: none; }
+}
+.sidebarLogo {
+  font-size: $font-size-xl; font-weight: 700;
+  color: var(--primary); letter-spacing: -0.04em;
+  padding: $space-5 $space-5 $space-4;
+  flex-shrink: 0;
+}
+.sidebarMeta {
+  @include flex(row, center, flex-start, $space-3);
+  padding: $space-3 $space-5 $space-5;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: $space-3;
+}
+.sidebarAvatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--primary-bg); color: var(--primary);
+  font-weight: 700; font-size: $font-size-base;
+  @include flex-center; flex-shrink: 0;
+}
+.sidebarName { font-size: $font-size-sm; font-weight: 600; color: var(--text); }
+.sidebarRole { font-size: $font-size-xs; color: var(--text-muted); }
+.sidebarNav {
+  @include flex(column, stretch, flex-start, 2px);
+  padding: 0 $space-3; flex: 1;
+}
+.navItem {
+  @include flex(row, center, flex-start, $space-3);
+  padding: 10px $space-3;
+  border-radius: var(--radius-sm);
+  font-size: $font-size-sm; font-weight: 500;
+  color: var(--text-muted);
+  transition: var(--transition);
+  span { flex: 1; }
+  &:hover { background: var(--bg); color: var(--text); }
+  &.active { background: var(--primary-bg); color: var(--primary); font-weight: 600; }
+}
+
+// ─── Mobile Hamburger ─────────────────────────────────────────────────────────
+.hamburger {
+  display: none;
+  @include flex-center;
+  width: 38px; height: 38px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  transition: var(--transition);
+  &:hover { background: var(--border); }
+  @include max-lg { display: flex; }
+}
+
+// ─── Mobile Drawer ────────────────────────────────────────────────────────────
+.drawerBackdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.45);
+}
+.drawer {
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 201;
+  width: 260px; background: var(--surface);
+  border-right: 1px solid var(--border);
+  @include flex(column, stretch, flex-start, 0);
+  overflow-y: auto;
+  @include thin-scrollbar;
+}
+.drawerHeader {
+  @include flex-between;
+  padding: $space-4 $space-5;
+  border-bottom: 1px solid var(--border);
+  button { @include flex-center; color: var(--text-muted); }
+}
+
+// ─── Buyer Bottom Nav ────────────────────────────────────────────────────────
+.bottomNav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  @include flex(row, stretch, space-around, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  height: 60px;
+
+  @include max-md { display: flex; }
+}
+.bottomItem {
+  flex: 1;
+  @include flex(column, center, center, 3px);
+  font-size: 10px; font-weight: 500;
+  color: var(--text-muted); transition: var(--transition);
+  &.active { color: var(--primary); }
+  &:hover { color: var(--text); }
+}

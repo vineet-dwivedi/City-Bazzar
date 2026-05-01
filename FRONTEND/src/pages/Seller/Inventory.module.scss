@@ -1,0 +1,52 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.page { display: flex; flex-direction: column; gap: $space-5; }
+.header { @include flex-between; }
+.title { font-size: $font-size-2xl; font-weight: 700; }
+
+.controls {
+  @include flex(row, center, space-between, $space-4);
+  flex-wrap: wrap;
+}
+.search {
+  @include flex(row, center, flex-start, $space-2);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 0 $space-3;
+  width: 300px; height: 38px;
+  &:focus-within { border-color: var(--primary); }
+}
+.searchIcon { color: var(--text-muted); }
+.searchInput { border: none; background: transparent; flex: 1; color: var(--text); outline: none; }
+.filters { @include flex(row, center, flex-start, $space-2); overflow-x: auto; @include thin-scrollbar; padding-bottom: 4px; }
+.filterChip {
+  padding: 6px 14px; border-radius: var(--radius-full);
+  font-size: $font-size-sm; font-weight: 500;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); transition: var(--transition);
+  white-space: nowrap;
+  &:hover { background: var(--bg); }
+  &.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+}
+
+.tableCard { overflow: hidden; }
+.tableWrap { width: 100%; overflow-x: auto; @include thin-scrollbar; }
+.table {
+  width: 100%; border-collapse: collapse; min-width: 600px;
+  th, td { padding: $space-3 $space-4; text-align: left; border-bottom: 1px solid var(--border); }
+  th { font-size: $font-size-xs; font-weight: 600; color: var(--text-muted); text-transform: uppercase; background: var(--bg); }
+  td { font-size: $font-size-sm; color: var(--text); }
+  tbody tr { transition: var(--transition); &:hover { background: rgba(0,0,0,0.02); } }
+}
+.tdName { @include flex(row, center, flex-start, $space-3); }
+.imgThumb { width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--border); flex-shrink: 0; }
+.nameText { font-weight: 500; }
+.right { text-align: right !important; }
+.actions { @include flex(row, center, flex-end, $space-2); }
+.danger {}
+.iconBtn {
+  @include flex-center; width: 32px; height: 32px; border-radius: 4px;
+  color: var(--text-muted); transition: var(--transition);
+  &:hover { background: var(--bg); color: var(--primary); }
+  &.danger:hover { color: var(--error); background: rgba(239,68,68,0.1); }
+}
