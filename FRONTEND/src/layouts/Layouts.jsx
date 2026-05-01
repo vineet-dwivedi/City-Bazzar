@@ -3,10 +3,11 @@ import Navbar from '../components/Navbar/Navbar';
 import { SellerSidebar, BuyerBottomNav } from '../components/Sidebar/Sidebar';
 import styles from './Layouts.module.scss';
 import { useAuth } from '../context/AuthContext';
+import { normalizeRole } from '../lib/routes.js';
 
 export function DashboardLayout() {
   const { user } = useAuth();
-  const isSeller = user?.role === 'seller';
+  const isSeller = normalizeRole(user?.role) === 'seller';
 
   return (
     <div className={styles.layout}>

@@ -1,5 +1,5 @@
 // Desktop sidebar + mobile bottom nav for Seller / Buyer
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Package, ClipboardList, BarChart2,
@@ -8,21 +8,22 @@ import {
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import styles from './Sidebar.module.scss';
+import { APP_ROUTES } from '../../lib/routes.js';
 
 const SELLER_NAV = [
-  { to: '/seller',            icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
-  { to: '/seller/add',        icon: <PlusCircle size={18} />,      label: 'Add Product' },
-  { to: '/seller/inventory',  icon: <Package size={18} />,         label: 'Inventory' },
-  { to: '/seller/requests',   icon: <ClipboardList size={18} />,   label: 'Requests' },
-  { to: '/seller/analytics',  icon: <BarChart2 size={18} />,       label: 'Analytics' },
-  { to: '/seller/settings',   icon: <Settings size={18} />,        label: 'Settings' },
+  { to: APP_ROUTES.sellerHome,        icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
+  { to: APP_ROUTES.sellerAddProduct,  icon: <PlusCircle size={18} />,      label: 'Add Product' },
+  { to: APP_ROUTES.sellerInventory,   icon: <Package size={18} />,         label: 'Inventory' },
+  { to: APP_ROUTES.sellerRequests,    icon: <ClipboardList size={18} />,   label: 'Requests' },
+  { to: APP_ROUTES.sellerAnalytics,   icon: <BarChart2 size={18} />,       label: 'Analytics' },
+  { to: APP_ROUTES.sellerSettings,    icon: <Settings size={18} />,        label: 'Settings' },
 ];
 
 const BUYER_BOTTOM = [
-  { to: '/buyer',    icon: <Home size={20} />,   label: 'Home' },
-  { to: '/search',   icon: <Search size={20} />, label: 'Search' },
-  { to: '/requests', icon: <ClipboardList size={20}/>, label: 'Requests' },
-  { to: '/profile',  icon: <User size={20} />,   label: 'Profile' },
+  { to: APP_ROUTES.buyerHome,     icon: <Home size={20} />,   label: 'Home' },
+  { to: APP_ROUTES.buyerSearch,   icon: <Search size={20} />, label: 'Search' },
+  { to: APP_ROUTES.buyerRequests, icon: <ClipboardList size={20}/>, label: 'Requests' },
+  { to: APP_ROUTES.buyerProfile,  icon: <User size={20} />,   label: 'Profile' },
 ];
 
 export function SellerSidebar() {
@@ -44,7 +45,7 @@ export function SellerSidebar() {
         <nav className={styles.sidebarNav}>
           {SELLER_NAV.map(({ to, icon, label }) => (
             <NavLink
-              key={to} to={to} end={to === '/seller'}
+              key={to} to={to} end={to === APP_ROUTES.sellerHome}
               className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
             >
               {icon}<span>{label}</span>
@@ -72,7 +73,7 @@ export function SellerSidebar() {
               </div>
               <nav className={styles.sidebarNav}>
                 {SELLER_NAV.map(({ to, icon, label }) => (
-                  <NavLink key={to} to={to} end={to === '/seller'}
+                  <NavLink key={to} to={to} end={to === APP_ROUTES.sellerHome}
                     className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
                     onClick={() => setMobileOpen(false)}>
                     {icon}<span>{label}</span>
@@ -91,7 +92,7 @@ export function BuyerBottomNav() {
   return (
     <nav className={styles.bottomNav}>
       {BUYER_BOTTOM.map(({ to, icon, label }) => (
-        <NavLink key={to} to={to} end={to === '/buyer'}
+        <NavLink key={to} to={to} end={to === APP_ROUTES.buyerHome}
           className={({ isActive }) => `${styles.bottomItem} ${isActive ? styles.active : ''}`}>
           {icon}
           <span>{label}</span>

@@ -43,6 +43,7 @@
 .nameText { font-weight: 500; }
 .right { text-align: right !important; }
 .actions { @include flex(row, center, flex-end, $space-2); }
+.danger {}
 .iconBtn {
   @include flex-center; width: 32px; height: 32px; border-radius: 4px;
   color: var(--text-muted); transition: var(--transition);

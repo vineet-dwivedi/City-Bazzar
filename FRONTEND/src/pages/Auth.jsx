@@ -1,22 +1,63 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ShoppingBag, Store } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button/Button';
 import Input from '../components/ui/Input/Input';
 import styles from './Auth.module.scss';
-import { ShoppingBag, Store } from 'lucide-react';
+import { getHomePath } from '../lib/routes.js';
+
+const EMPTY_FORM = {
+  fullName: '',
+  email: '',
+  password: '',
+};
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
-  const [role, setRole] = useState(null); // 'buyer' | 'seller'
-  const { login } = useAuth();
+  const [role, setRole] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const { login, register } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    const r = role || 'buyer';
-    login(r);
-    navigate(r === 'seller' ? '/seller' : '/buyer');
+  const updateField = (field) => (event) => {
+    setForm((current) => ({ ...current, [field]: event.target.value }));
+  };
+
+  const resetForm = () => {
+    setForm(EMPTY_FORM);
+    setError('');
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
+    setSubmitting(true);
+
+    try {
+      const trimmedEmail = form.email.trim();
+      const payload = {
+        email: trimmedEmail,
+        password: form.password,
+      };
+
+      const account = isLogin
+        ? await login(payload)
+        : await register({
+            fullName: form.fullName.trim(),
+            email: trimmedEmail,
+            password: form.password,
+            role: role || 'buyer',
+          });
+
+      navigate(getHomePath(account.role), { replace: true });
+    } catch (requestError) {
+      setError(requestError.message || 'We could not complete that request.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!role && !isLogin) {
@@ -31,15 +72,15 @@ export default function Auth() {
             <button className={styles.roleCard} onClick={() => setRole('buyer')}>
               <ShoppingBag size={32} className={styles.roleIcon} />
               <h3>I'm a Buyer</h3>
-              <p>Discover & pickup nearby products</p>
+              <p>Discover and reserve nearby products in real time.</p>
             </button>
             <button className={styles.roleCard} onClick={() => setRole('seller')}>
               <Store size={32} className={styles.roleIcon} />
               <h3>I'm a Seller</h3>
-              <p>List products & manage inventory</p>
+              <p>Create your shop profile and manage local inventory.</p>
             </button>
             <div className={styles.footer}>
-              <p>Already have an account? <span onClick={() => setIsLogin(true)}>Login</span></p>
+              <p>Already have an account? <span onClick={() => { setIsLogin(true); resetForm(); }}>Login</span></p>
             </div>
           </div>
         </div>
@@ -57,34 +98,50 @@ export default function Auth() {
         <div className={styles.formPanel}>
           <div className={styles.formInner}>
             <h2>{isLogin ? 'Welcome back' : `Create ${role === 'seller' ? 'Seller' : 'Buyer'} Account`}</h2>
-            <p className={styles.sub}>Enter your details to continue</p>
-            
-            <form onSubmit={handleLogin} className={styles.form}>
-              {!isLogin && <Input label="Full Name" placeholder="John Doe" required />}
-              <Input label="Email" type="email" placeholder="you@example.com" required />
-              <Input label="Password" type="password" placeholder="••••••••" required />
-              
-              <Button type="submit" fullWidth size="lg">
-                {isLogin ? 'Login' : 'Sign Up'}
+            <p className={styles.sub}>
+              {isLogin ? 'Login with the account you created on the backend.' : 'Create a real account and continue.'}
+            </p>
+
+            <form onSubmit={handleSubmit} className={styles.form}>
+              {!isLogin && (
+                <Input
+                  label="Full Name"
+                  placeholder="John Doe"
+                  value={form.fullName}
+                  onChange={updateField('fullName')}
+                  required
+                />
+              )}
+              <Input
+                label="Email"
+                type="email"
+                placeholder="you@example.com"
+                value={form.email}
+                onChange={updateField('email')}
+                required
+              />
+              <Input
+                label="Password"
+                type="password"
+                placeholder="Enter your password"
+                value={form.password}
+                onChange={updateField('password')}
+                required
+              />
+
+              {error && <p className="text-error text-sm">{error}</p>}
+
+              <Button type="submit" fullWidth size="lg" disabled={submitting}>
+                {submitting ? 'Please wait...' : isLogin ? 'Login' : 'Create Account'}
               </Button>
             </form>
 
             <div className={styles.footer}>
               {isLogin ? (
-                <p>New to URBNBZR? <span onClick={() => setIsLogin(false)}>Sign up</span></p>
+                <p>New to URBNBZR? <span onClick={() => { setIsLogin(false); resetForm(); }}>Sign up</span></p>
               ) : (
-                <p>Already have an account? <span onClick={() => { setIsLogin(true); setRole(null); }}>Login</span></p>
+                <p>Already have an account? <span onClick={() => { setIsLogin(true); setRole(null); resetForm(); }}>Login</span></p>
               )}
-            </div>
-            
-            {/* Quick dev bypass */}
-            <div className={styles.devBypass}>
-              <p>Dev Bypass:</p>
-              <div className={styles.bpBtns}>
-                <Button variant="outline" size="sm" onClick={() => { login('buyer'); navigate('/buyer'); }}>Buyer</Button>
-                <Button variant="outline" size="sm" onClick={() => { login('seller'); navigate('/seller'); }}>Seller</Button>
-                <Button variant="outline" size="sm" onClick={() => { login('admin'); navigate('/admin'); }}>Admin</Button>
-              </div>
             </div>
           </div>
         </div>

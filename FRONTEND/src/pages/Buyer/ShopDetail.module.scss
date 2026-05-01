@@ -47,6 +47,12 @@
   width: 100%; aspect-ratio: 1; border-radius: var(--radius-sm);
   background: var(--bg);
 }
+.placeholderImg {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.08));
+}
 .pInfo { flex: 1; display: flex; flex-direction: column; gap: $space-2; }
 .pName { font-size: $font-size-sm; font-weight: 600; @include truncate; margin-bottom: 2px; }
 .pMeta { @include flex-between; margin-bottom: $space-3; margin-top: auto; }
@@ -64,6 +70,22 @@
 
 .reqForm { @include flex(column, stretch, flex-start, $space-4); }
 .label { font-size: $font-size-sm; font-weight: 500; color: var(--text); margin-bottom: 6px; display: block; }
+.textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: $font-size-base;
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+  transition: var(--transition);
+
+  &:focus {
+    border-color: var(--primary);
+  }
+}
 .etaGrid { display: grid; grid-template-columns: 1fr 1fr; gap: $space-2; }
 .etaBtn {
   padding: 10px; border: 1.5px solid var(--border);

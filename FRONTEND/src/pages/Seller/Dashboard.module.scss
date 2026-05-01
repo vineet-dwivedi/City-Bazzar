@@ -34,6 +34,7 @@
   gap: $space-6;
   @include max-lg { grid-template-columns: 1fr; }
 }
+.section { padding: $space-4; }
 .sectionTitle { font-size: $font-size-lg; font-weight: 600; margin-bottom: $space-4; }
 .list { @include flex(column, stretch, flex-start, 0); }
 .listItem {
