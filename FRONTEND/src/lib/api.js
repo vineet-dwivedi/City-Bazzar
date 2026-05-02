@@ -109,5 +109,6 @@ export const onboardingApi = {
 };
 
 export const pickupApi = {
+  listMine: () => request('/pickup-intents/mine'),
   createIntent: (payload) => request('/pickup-intents', { method: 'POST', body: payload }),
 };

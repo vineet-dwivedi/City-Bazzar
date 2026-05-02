@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Package, Clock, Heart, Settings, ChevronRight, Edit2, LogOut, MapPin, Bell } from 'lucide-react';
 import gsap from 'gsap';
 import styles from './BuyerProfile.module.scss';
-import { getPickupHistory } from '../../lib/pickup-history.js';
+import { pickupApi } from '../../lib/api.js';
 import { formatDateTime, formatPickupStatus } from '../../lib/format.js';
 import { APP_ROUTES } from '../../lib/routes.js';
 
@@ -12,7 +12,9 @@ export default function BuyerProfile() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const containerRef = useRef(null);
-  const pickupHistory = useMemo(() => getPickupHistory(), []);
+  const [pickupHistory, setPickupHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -26,11 +28,42 @@ export default function BuyerProfile() {
     return () => ctx.revert();
   }, []);
 
-  const stats = [
+  useEffect(() => {
+    let active = true;
+
+    const loadProfileActivity = async () => {
+      setLoading(true);
+      setError('');
+
+      try {
+        const response = await pickupApi.listMine();
+
+        if (active) {
+          setPickupHistory(response.pickupIntents || []);
+        }
+      } catch (requestError) {
+        if (active) {
+          setError(requestError.message || 'Profile activity could not be loaded.');
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProfileActivity();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const stats = useMemo(() => [
     { label: 'Active Requests', value: String(pickupHistory.filter((item) => item.status !== 'completed').length), icon: Clock },
     { label: 'Completed Pickups', value: String(pickupHistory.filter((item) => item.status === 'completed').length), icon: Package },
-    { label: 'Saved Shops', value: String(new Set(pickupHistory.map((item) => item.shopName)).size), icon: Heart },
-  ];
+    { label: 'Saved Shops', value: String(new Set(pickupHistory.map((item) => item.shop?.name || item.shopId)).size), icon: Heart },
+  ], [pickupHistory]);
 
   const settingsLinks = [
     { icon: MapPin, label: 'Pickup Requests', action: () => navigate(APP_ROUTES.buyerRequests) },
@@ -46,12 +79,15 @@ export default function BuyerProfile() {
         </div>
         <div className={styles.info}>
           <h1>{user?.name || 'Guest User'}</h1>
-          <p>{user?.email || 'No email on file'}</p>
+          <p>{user?.email || user?.phone || 'No contact details on file'}</p>
         </div>
         <button className={styles.editBtn} onClick={() => navigate(APP_ROUTES.buyerRequests)}>
           <Edit2 size={18} />
         </button>
       </div>
+
+      {loading && <p className="text-muted">Loading your activity...</p>}
+      {error && <p className="text-error">{error}</p>}
 
       <div className={`${styles.statsGrid} stagger-item`}>
         {stats.map((stat, idx) => (
@@ -78,8 +114,8 @@ export default function BuyerProfile() {
                   <Package size={20} />
                 </div>
                 <div className={styles.details}>
-                  <h4>{activity.productName}</h4>
-                  <p>{activity.shopName} - {formatDateTime(activity.createdAt)}</p>
+                  <h4>{activity.product?.name || 'Product unavailable'}</h4>
+                  <p>{activity.shop?.name || activity.shopId} - {formatDateTime(activity.createdAt)}</p>
                 </div>
               </div>
               <div className={styles.right}>
@@ -89,8 +125,8 @@ export default function BuyerProfile() {
               </div>
             </div>
           ))}
-          {pickupHistory.length === 0 && (
-            <p className="text-muted">Your backend-powered reservations will appear here after the first pickup request.</p>
+          {!loading && pickupHistory.length === 0 && (
+            <p className="text-muted">Your pickup history will appear here after the first reservation.</p>
           )}
         </div>
       </div>

@@ -479,6 +479,31 @@ export class MongoDataStore implements DataStore {
     return records.map(toPickupIntent);
   }
 
+  async listPickupIntentsByCustomer(input: {
+    customerUserId?: string;
+    customerPhone?: string;
+  }) {
+    const filters: Array<
+      | { customerUserId: string }
+      | { customerPhone: string }
+    > = [];
+
+    if (input.customerUserId) {
+      filters.push({ customerUserId: input.customerUserId });
+    }
+
+    if (input.customerPhone) {
+      filters.push({ customerPhone: input.customerPhone });
+    }
+
+    if (filters.length === 0) {
+      return [];
+    }
+
+    const records = await this.pickupIntents().find({ $or: filters }).sort({ createdAt: -1 }).toArray();
+    return records.map(toPickupIntent);
+  }
+
   async updatePickupIntentStatus(intentId: string, status: PickupIntent["status"]) {
     await this.pickupIntents().updateOne(
       { _id: intentId },

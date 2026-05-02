@@ -7,6 +7,8 @@ import Input from '../components/ui/Input/Input';
 import styles from './Auth.module.scss';
 import { getHomePath } from '../lib/routes.js';
 
+const DEV_BYPASS_ENABLED = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_BYPASS === 'true';
+
 const EMPTY_FORM = {
   fullName: '',
   identifier: '',
@@ -27,6 +29,21 @@ const resolveIdentifier = (identifier) => {
     : { email: '', phone: value };
 };
 
+const DEV_ACCOUNTS = {
+  buyer: {
+    fullName: 'Demo Buyer',
+    email: 'demo.buyer@urbnbzr.local',
+    password: 'Demo123!',
+    role: 'buyer',
+  },
+  seller: {
+    fullName: 'Demo Seller',
+    email: 'demo.seller@urbnbzr.local',
+    password: 'Demo123!',
+    role: 'seller',
+  },
+};
+
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState(null);
@@ -43,6 +60,32 @@ export default function Auth() {
   const resetForm = () => {
     setForm(EMPTY_FORM);
     setError('');
+  };
+
+  const loginWithAccount = async (account) => {
+    try {
+      return await login({
+        email: account.email,
+        password: account.password,
+      });
+    } catch {
+      return register(account);
+    }
+  };
+
+  const handleDevBypass = async (accountKey) => {
+    setError('');
+    setSubmitting(true);
+
+    try {
+      const account = DEV_ACCOUNTS[accountKey];
+      const sessionUser = await loginWithAccount(account);
+      navigate(getHomePath(sessionUser.role), { replace: true });
+    } catch (requestError) {
+      setError(requestError.message || 'The dev bypass session could not be created.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -107,6 +150,31 @@ export default function Auth() {
             <div className={styles.footer}>
               <p>Already have an account? <span onClick={() => { setIsLogin(true); resetForm(); }}>Login</span></p>
             </div>
+            {DEV_BYPASS_ENABLED && (
+              <div className={styles.devBypass}>
+                <p>Dev bypass</p>
+                <div className={styles.bpBtns}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={submitting}
+                    onClick={() => handleDevBypass('buyer')}
+                  >
+                    Buyer demo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={submitting}
+                    onClick={() => handleDevBypass('seller')}
+                  >
+                    Seller demo
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -185,6 +253,31 @@ export default function Auth() {
                 <p>Already have an account? <span onClick={() => { setIsLogin(true); setRole(null); resetForm(); }}>Login</span></p>
               )}
             </div>
+            {DEV_BYPASS_ENABLED && (
+              <div className={styles.devBypass}>
+                <p>Dev bypass</p>
+                <div className={styles.bpBtns}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={submitting}
+                    onClick={() => handleDevBypass('buyer')}
+                  >
+                    Buyer demo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={submitting}
+                    onClick={() => handleDevBypass('seller')}
+                  >
+                    Seller demo
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
