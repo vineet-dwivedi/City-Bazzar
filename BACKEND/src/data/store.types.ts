@@ -167,6 +167,10 @@ export interface DataStore {
   createPickupIntent(input: PickupIntentCreateInput): Promise<PickupIntent>;
   findPickupIntentById(intentId: string): Promise<PickupIntent | undefined>;
   listPickupIntentsByShop(shopId: string): Promise<PickupIntent[]>;
+  listPickupIntentsByCustomer(input: {
+    customerUserId?: string;
+    customerPhone?: string;
+  }): Promise<PickupIntent[]>;
   updatePickupIntentStatus(
     intentId: string,
     status: PickupIntentStatus

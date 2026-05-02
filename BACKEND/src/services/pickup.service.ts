@@ -57,6 +57,21 @@ class PickupService {
     );
   }
 
+  async listCustomerIntents(input: {
+    customerUserId?: string;
+    customerPhone?: string;
+  }) {
+    const intents = await dataStore.listPickupIntentsByCustomer(input);
+
+    return Promise.all(
+      intents.map(async (intent) => ({
+        ...intent,
+        shop: await dataStore.findShopById(intent.shopId),
+        product: await dataStore.findCatalogProductById(intent.productId),
+      }))
+    );
+  }
+
   async updateIntentStatus(shopId: string, intentId: string, status: Parameters<typeof dataStore.updatePickupIntentStatus>[1]) {
     const current = await dataStore.findPickupIntentById(intentId);
 

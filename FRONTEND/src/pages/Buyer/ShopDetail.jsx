@@ -97,6 +97,7 @@ export default function ShopDetail() {
       const response = await pickupApi.createIntent({
         shopId: shop.id,
         productId: selectedProduct.productId,
+        customerUserId: user?.id,
         customerName: form.customerName.trim(),
         customerPhone: form.customerPhone.trim(),
         quantityRequested: Number(form.quantityRequested) || 1,

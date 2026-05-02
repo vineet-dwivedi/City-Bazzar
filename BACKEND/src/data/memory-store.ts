@@ -399,6 +399,20 @@ export class MemoryDataStore implements DataStore {
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
   }
 
+  async listPickupIntentsByCustomer(input: {
+    customerUserId?: string;
+    customerPhone?: string;
+  }) {
+    return this.pickupIntents
+      .filter((entry) => {
+        const matchesUser = input.customerUserId && entry.customerUserId === input.customerUserId;
+        const matchesPhone = input.customerPhone && entry.customerPhone === input.customerPhone;
+        return Boolean(matchesUser || matchesPhone);
+      })
+      .map((entry) => this.toPickupIntent(entry))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  }
+
   async updatePickupIntentStatus(intentId: string, status: PickupIntent["status"]) {
     const record = this.pickupIntents.find((entry) => entry._id === intentId);
 
