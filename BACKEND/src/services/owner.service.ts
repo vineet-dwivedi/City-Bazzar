@@ -36,6 +36,15 @@ class OwnerService {
     return shopService.getOwnedInventory(userId);
   }
 
+  async getOwnerInventoryPage(userId: string, options: {
+    page?: number;
+    pageSize?: number;
+    query?: string;
+    stockStatus?: "in_stock" | "low_stock" | "out_of_stock";
+  }) {
+    return shopService.getOwnedInventoryPage(userId, options);
+  }
+
   async upsertOwnerInventoryItem(userId: string, input: {
     productId: string;
     stockStatus: "in_stock" | "low_stock" | "out_of_stock";

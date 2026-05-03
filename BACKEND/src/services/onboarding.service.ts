@@ -1,52 +1,36 @@
-// Onboarding service keeps the MVP AI flow local and easy to swap later.
-import { catalogService } from "./catalog.service.js";
-import { OnboardingAnalysis, ProductCategory } from "../types.js";
+// Onboarding orchestration stays compact: OCR -> catalog match -> extraction -> notes.
+import { OnboardingAnalysis } from "../types.js";
 import { dataStore } from "./store.js";
-import { extractPrice, normalizeText, titleCase, tokenize, uniqueStrings } from "../utils/text.js";
-
-const categoryHints: Record<ProductCategory, string[]> = {
-  grocery: ["atta", "rice", "dal", "oil", "maggi", "noodles", "milk"],
-  stationery: ["notebook", "pen", "pencil", "eraser", "copy", "classmate"],
-  pharmacy: ["tablet", "medicine", "syrup", "crocin", "paracetamol"],
-  "personal-care": ["toothpaste", "soap", "shampoo", "sanitizer", "cream"],
-  beverages: ["juice", "milk", "drink", "tea", "coffee"],
-  snacks: ["chips", "biscuits", "cookies", "namkeen", "snack"],
-  household: ["detergent", "cleaner", "mop", "utensil", "wash"]
-};
+import { CatalogMatcher } from "./ai/catalog-matcher.js";
+import { LocalExtractionProvider } from "./ai/local-extraction.provider.js";
+import { LocalOcrProvider } from "./ai/local-ocr.provider.js";
 
 class OnboardingService {
+  private readonly ocrProvider = new LocalOcrProvider();
+  private readonly extractionProvider = new LocalExtractionProvider();
+  private readonly catalogMatcher = new CatalogMatcher();
+
   async analyze(input: {
     imageUrl: string;
     rawText?: string;
     manualHint?: string;
     shopId?: string;
   }): Promise<OnboardingAnalysis> {
-    // We combine OCR text, owner hints, and file-name hints into one rough prompt.
-    const imageHint = input.imageUrl.split("/").pop()?.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]/g, " ") ?? "";
-    const combinedText = [input.rawText, input.manualHint, imageHint].filter(Boolean).join(" ").trim();
-    const normalized = normalizeText(combinedText);
-
-    const catalogMatches = await catalogService.search(normalized, 1);
-    const bestMatch = catalogMatches[0];
-    const inferredBrand = bestMatch?.product.brand ?? (await this.inferBrand(normalized)) ?? "Local Brand";
-    const inferredCategory = bestMatch?.product.category ?? this.inferCategory(normalized);
-    const detectedMrp = extractPrice(combinedText);
-    const inferredName =
-      bestMatch?.product.name ?? this.inferProductName(normalized, inferredBrand, inferredCategory);
-    const confidence = bestMatch?.score ?? Math.min(0.45, tokenize(normalized).length * 0.1);
-    const notes: string[] = [];
-
-    if (!input.rawText) {
-      notes.push("OCR text not provided yet, so the analysis relies mostly on image naming hints.");
-    }
-
-    if (!detectedMrp) {
-      notes.push("Price was not confidently detected. Shop owner should verify MRP manually.");
-    }
-
-    if (confidence < 0.6) {
-      notes.push("Low catalog confidence. Treat this as a new catalog candidate unless the owner confirms a match.");
-    }
+    const combinedText = await this.ocrProvider.readText(input);
+    const bestMatch = await this.catalogMatcher.match(combinedText);
+    const inferredBrand = bestMatch?.product.brand ?? await this.catalogMatcher.inferBrand(combinedText) ?? "Local Brand";
+    const extracted = this.extractionProvider.extract({
+      text: combinedText,
+      fallbackBrand: inferredBrand,
+      fallbackCategory: bestMatch?.product.category,
+      fallbackName: bestMatch?.product.name
+    });
+    const confidence = bestMatch?.score ?? Math.min(0.45, extracted.keywords.length * 0.08);
+    const notes = this.buildNotes({
+      rawText: input.rawText,
+      mrp: extracted.mrp,
+      confidence
+    });
 
     const analysis: OnboardingAnalysis = {
       source: {
@@ -54,11 +38,11 @@ class OnboardingService {
         combinedText
       },
       extracted: {
-        name: inferredName,
-        brand: inferredBrand,
-        category: inferredCategory,
-        mrp: detectedMrp,
-        price: detectedMrp,
+        name: extracted.name,
+        brand: extracted.brand,
+        category: extracted.category,
+        mrp: extracted.mrp,
+        price: extracted.price
       },
       catalogMatch: bestMatch && bestMatch.score >= 0.6
         ? {
@@ -70,7 +54,7 @@ class OnboardingService {
             status: "new",
             confidence: Number(confidence.toFixed(2))
           },
-      suggestedKeywords: this.buildSuggestedKeywords(normalized, inferredBrand, inferredCategory),
+      suggestedKeywords: extracted.keywords,
       notes
     };
 
@@ -87,36 +71,26 @@ class OnboardingService {
     return analysis;
   }
 
-  private async inferBrand(text: string) {
-    const products = await catalogService.list();
-    const product = products.find((item) => {
-      const brandToken = normalizeText(item.brand);
-      return brandToken && text.includes(brandToken);
-    });
+  private buildNotes(input: {
+    rawText?: string;
+    mrp: number | null;
+    confidence: number;
+  }) {
+    const notes: string[] = [];
 
-    return product?.brand;
-  }
-
-  private inferCategory(text: string): ProductCategory {
-    const entry = Object.entries(categoryHints).find(([, hints]) =>
-      hints.some((hint) => text.includes(hint))
-    );
-
-    return (entry?.[0] as ProductCategory | undefined) ?? "grocery";
-  }
-
-  private inferProductName(text: string, brand: string, category: ProductCategory) {
-    const meaningfulTokens = tokenize(text).filter((token) => token.length > 2);
-
-    if (meaningfulTokens.length === 0) {
-      return titleCase(`${brand} ${category}`);
+    if (!input.rawText) {
+      notes.push("OCR text is currently derived from upload naming and owner hints.");
     }
 
-    return titleCase(meaningfulTokens.slice(0, 4).join(" "));
-  }
+    if (!input.mrp) {
+      notes.push("Price was not confidently detected. Please verify MRP manually.");
+    }
 
-  private buildSuggestedKeywords(text: string, brand: string, category: ProductCategory) {
-    return uniqueStrings([brand.toLowerCase(), category, ...tokenize(text)]).slice(0, 8);
+    if (input.confidence < 0.6) {
+      notes.push("Catalog confidence is low. Confirm carefully before saving.");
+    }
+
+    return notes;
   }
 }
 

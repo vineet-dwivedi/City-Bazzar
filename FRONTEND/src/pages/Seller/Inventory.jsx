@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Edit2, Trash2, Download } from 'lucide-react';
 import Card from '../../components/ui/Card/Card';
@@ -20,6 +20,7 @@ const STOCK_OPTIONS = [
   { value: 'low_stock', label: 'Low Stock' },
   { value: 'out_of_stock', label: 'Out of Stock' },
 ];
+const PAGE_SIZE = 10;
 
 const createEditForm = (item) => ({
   quantity: item.quantity,
@@ -30,8 +31,10 @@ const createEditForm = (item) => ({
 
 export default function Inventory() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [shop, setShop] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [shopName, setShopName] = useState('');
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, pageSize: PAGE_SIZE, totalItems: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('All');
@@ -47,19 +50,37 @@ export default function Inventory() {
 
   useEffect(() => {
     let active = true;
+    const page = Math.max(1, Number(searchParams.get('page') || 1));
+    const stockStatus = filter === 'All'
+      ? undefined
+      : filter === 'In Stock'
+        ? 'in_stock'
+        : filter === 'Low Stock'
+          ? 'low_stock'
+          : 'out_of_stock';
 
     const loadInventory = async () => {
       setLoading(true);
       setError('');
 
       try {
-        const response = await ownerApi.getShop();
+        const [shopResponse, inventoryResponse] = await Promise.all([
+          ownerApi.getShop(),
+          ownerApi.getInventory({
+            page,
+            pageSize: PAGE_SIZE,
+            query,
+            stockStatus,
+          }),
+        ]);
 
         if (!active) {
           return;
         }
 
-        setShop(response);
+        setShopName(shopResponse.name);
+        setInventoryItems(inventoryResponse.inventory || []);
+        setPagination(inventoryResponse.pagination || { page, pageSize: PAGE_SIZE, totalItems: 0, totalPages: 1 });
         setShopMissing(false);
       } catch (requestError) {
         if (!active) {
@@ -68,7 +89,8 @@ export default function Inventory() {
 
         if (requestError.status === 404) {
           setShopMissing(true);
-          setShop(null);
+          setShopName('');
+          setInventoryItems([]);
         } else {
           setError(requestError.message || 'Inventory could not be loaded.');
         }
@@ -84,27 +106,7 @@ export default function Inventory() {
     return () => {
       active = false;
     };
-  }, []);
-
-  const inventoryItems = useMemo(
-    () => shop?.inventory?.filter((item) => item.product) || [],
-    [shop]
-  );
-  const filteredItems = useMemo(() => (
-    inventoryItems.filter((item) => {
-      const matchesFilter =
-        filter === 'All' ||
-        (filter === 'In Stock' && item.stockStatus === 'in_stock') ||
-        (filter === 'Low Stock' && item.stockStatus === 'low_stock') ||
-        (filter === 'Out of Stock' && item.stockStatus === 'out_of_stock');
-
-      const matchesQuery = `${item.product.name} ${item.product.brand} ${item.product.category}`
-        .toLowerCase()
-        .includes(query.toLowerCase());
-
-      return matchesFilter && matchesQuery;
-    })
-  ), [filter, inventoryItems, query]);
+  }, [filter, query, searchParams]);
 
   const openEditor = (item) => {
     setEditingItem(item);
@@ -134,12 +136,9 @@ export default function Inventory() {
         imageUrl: editingItem.imageUrl,
       }, editingItem.productId);
 
-      setShop((current) => ({
-        ...current,
-        inventory: current.inventory.map((item) =>
-          item.id === editingItem.id ? { ...item, ...updated } : item
-        ),
-      }));
+      setInventoryItems((current) => current.map((item) =>
+        item.id === editingItem.id ? { ...item, ...updated } : item
+      ));
       closeEditor();
     } catch (requestError) {
       setError(requestError.message || 'Inventory update failed.');
@@ -157,10 +156,7 @@ export default function Inventory() {
 
     try {
       await ownerApi.deleteInventoryItem(item.productId);
-      setShop((current) => ({
-        ...current,
-        inventory: current.inventory.filter((entry) => entry.id !== item.id),
-      }));
+      setInventoryItems((current) => current.filter((entry) => entry.id !== item.id));
     } catch (requestError) {
       setError(requestError.message || 'The inventory item could not be deleted.');
     }
@@ -169,7 +165,7 @@ export default function Inventory() {
   const exportCsv = () => {
     const rows = [
       ['Product', 'Category', 'Price', 'MRP', 'Quantity', 'Stock Status'],
-      ...filteredItems.map((item) => [
+      ...inventoryItems.map((item) => [
         item.product.name,
         formatCategory(item.product.category),
         String(item.price),
@@ -193,9 +189,9 @@ export default function Inventory() {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Inventory Management</h1>
-          {shop && <p className="text-muted">{shop.name}</p>}
+          {shopName && <p className="text-muted">{shopName}</p>}
         </div>
-        <Button variant="outline" icon={<Download size={16} />} onClick={exportCsv} disabled={!filteredItems.length}>
+        <Button variant="outline" icon={<Download size={16} />} onClick={exportCsv} disabled={!inventoryItems.length}>
           Export CSV
         </Button>
       </div>
@@ -225,7 +221,17 @@ export default function Inventory() {
                 placeholder="Search products..."
                 className={styles.searchInput}
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  const nextParams = new URLSearchParams(searchParams);
+                  if (event.target.value.trim()) {
+                    nextParams.set('q', event.target.value);
+                  } else {
+                    nextParams.delete('q');
+                  }
+                  nextParams.delete('page');
+                  setSearchParams(nextParams, { replace: true });
+                }}
               />
             </div>
             <div className={styles.filters}>
@@ -233,7 +239,12 @@ export default function Inventory() {
                 <button
                   key={value}
                   className={`${styles.filterChip} ${filter === value ? styles.active : ''}`}
-                  onClick={() => setFilter(value)}
+                  onClick={() => {
+                    setFilter(value);
+                    const nextParams = new URLSearchParams(searchParams);
+                    nextParams.delete('page');
+                    setSearchParams(nextParams, { replace: true });
+                  }}
                 >
                   {value}
                 </button>
@@ -255,7 +266,7 @@ export default function Inventory() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredItems.map((item) => (
+                  {inventoryItems.map((item) => (
                     <tr key={item.id}>
                       <td className={styles.tdName}>
                         <div className={styles.imgThumb} />
@@ -283,9 +294,38 @@ export default function Inventory() {
                   ))}
                 </tbody>
               </table>
-              {!filteredItems.length && <p style={{ padding: '16px' }} className="text-muted">No inventory items match this filter.</p>}
+              {!inventoryItems.length && <p style={{ padding: '16px' }} className="text-muted">No inventory items match this filter.</p>}
             </div>
           </Card>
+          {pagination.totalPages > 1 && (
+            <div className={styles.pagination}>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pagination.page <= 1}
+                onClick={() => {
+                  const nextParams = new URLSearchParams(searchParams);
+                  nextParams.set('page', String(pagination.page - 1));
+                  setSearchParams(nextParams, { replace: true });
+                }}
+              >
+                Previous
+              </Button>
+              <span className={styles.pageMeta}>Page {pagination.page} of {pagination.totalPages}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => {
+                  const nextParams = new URLSearchParams(searchParams);
+                  nextParams.set('page', String(pagination.page + 1));
+                  setSearchParams(nextParams, { replace: true });
+                }}
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </>
       )}
 

@@ -115,6 +115,30 @@
   }
 }
 
+.pagination {
+  @include flex(row, center, center, $space-3);
+  margin-top: $space-2;
+
+  button {
+    min-width: 96px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  span {
+    color: var(--text-muted);
+    font-size: $font-size-sm;
+  }
+}
+
 .productCard {
   @include card;
   padding: $space-4;

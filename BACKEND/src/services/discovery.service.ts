@@ -4,6 +4,7 @@ import { ProductDiscoveryResult, Shop } from "../types.js";
 import { dataStore } from "./store.js";
 import { haversineDistanceKm } from "../utils/geo.js";
 import { normalizeText } from "../utils/text.js";
+import { slicePage } from "../utils/pagination.js";
 
 class DiscoveryService {
   async listShops(options: {
@@ -11,6 +12,8 @@ class DiscoveryService {
     lng?: number;
     radiusKm?: number;
     query?: string;
+    page?: number;
+    pageSize?: number;
   }) {
     const allShops = await dataStore.listShops();
     const shops = allShops.map((shop) =>
@@ -45,6 +48,8 @@ class DiscoveryService {
     lat: number;
     lng: number;
     radiusKm: number;
+    page?: number;
+    pageSize?: number;
   }) {
     // Search starts from the catalog, then filters to nearby in-stock inventory.
     const matches = await catalogService.search(options.query, 12);
@@ -55,7 +60,7 @@ class DiscoveryService {
     });
     const allInventory = await dataStore.listInventoryItems();
 
-    const results: ProductDiscoveryResult[] = matches
+    const allResults: ProductDiscoveryResult[] = matches
       .map(({ product }) => {
         const nearbyInventory = allInventory
           .filter((item) => item.productId === product.id && item.stockStatus !== "out_of_stock")
@@ -91,9 +96,10 @@ class DiscoveryService {
         };
       })
       .filter((entry): entry is ProductDiscoveryResult => entry !== null);
+    const { items: results, pagination } = slicePage(allResults, options);
 
     await Promise.all(
-      uniqueShopIds(results).map((shopId) =>
+      uniqueShopIds(allResults).map((shopId) =>
         dataStore.incrementShopAnalytics(shopId, { searchHits: 1 })
       )
     );
@@ -110,7 +116,7 @@ class DiscoveryService {
       eventType: "search",
       metadata: {
         query: options.query,
-        resultCount: results.length
+        resultCount: allResults.length
       }
     });
 
@@ -121,7 +127,8 @@ class DiscoveryService {
         lng: options.lng,
         radiusKm: options.radiusKm
       },
-      totalMatches: results.length,
+      totalMatches: allResults.length,
+      pagination,
       results
     };
   }

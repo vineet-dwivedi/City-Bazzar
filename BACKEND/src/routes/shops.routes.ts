@@ -5,6 +5,7 @@ import { shopService } from "../services/shop.service.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import { badRequest, notFound } from "../utils/api-error.js";
 import { optionalNumber, optionalString } from "../utils/input.js";
+import { slicePage } from "../utils/pagination.js";
 
 export const shopRouter = Router();
 
@@ -13,10 +14,12 @@ shopRouter.get("/", asyncHandler(async (request, response) => {
   const lng = optionalNumber(request.query.lng, "lng");
   const radiusKm = optionalNumber(request.query.radiusKm, "radiusKm");
   const query = optionalString(request.query.query);
+  const page = optionalNumber(request.query.page, "page");
+  const pageSize = optionalNumber(request.query.pageSize, "pageSize");
+  const shops = await discoveryService.listShops({ lat, lng, radiusKm, query });
+  const paged = slicePage(shops, { page, pageSize });
 
-  response.json({
-    shops: await discoveryService.listShops({ lat, lng, radiusKm, query })
-  });
+  response.json({ shops: paged.items, pagination: paged.pagination });
 }));
 
 shopRouter.get("/:shopId", asyncHandler(async (request, response) => {

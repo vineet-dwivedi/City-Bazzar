@@ -50,3 +50,12 @@
   &:hover { background: var(--bg); color: var(--primary); }
   &.danger:hover { color: var(--error); background: rgba(239,68,68,0.1); }
 }
+
+.pagination {
+  @include flex(row, center, flex-end, $space-3);
+}
+
+.pageMeta {
+  color: var(--text-muted);
+  font-size: $font-size-sm;
+}
