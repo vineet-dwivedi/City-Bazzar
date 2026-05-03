@@ -1,6 +1,7 @@
 // Auth routes only parse input and delegate real work to the auth service.
 import { Router } from "express";
 import { requireAuth, AuthenticatedRequest } from "../middleware/auth.middleware.js";
+import { rateLimit } from "../middleware/rate-limit.js";
 import { authService } from "../services/auth.service.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import { optionalString, requiredString } from "../utils/input.js";
@@ -8,7 +9,7 @@ import { badRequest } from "../utils/api-error.js";
 
 export const authRouter = Router();
 
-authRouter.post("/register", asyncHandler(async (request, response) => {
+authRouter.post("/register", rateLimit({ key: "auth-register", limit: 15, windowMs: 60_000 }), asyncHandler(async (request, response) => {
   const fullName = requiredString(request.body.fullName, "fullName");
   const password = requiredString(request.body.password, "password");
   const email = optionalString(request.body.email);
@@ -28,7 +29,7 @@ authRouter.post("/register", asyncHandler(async (request, response) => {
   }));
 }));
 
-authRouter.post("/login", asyncHandler(async (request, response) => {
+authRouter.post("/login", rateLimit({ key: "auth-login", limit: 25, windowMs: 60_000 }), asyncHandler(async (request, response) => {
   const email = optionalString(request.body.email);
   const phone = optionalString(request.body.phone);
   const password = requiredString(request.body.password, "password");

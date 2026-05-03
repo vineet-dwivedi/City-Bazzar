@@ -1,6 +1,7 @@
 // Customer-side pickup intent route. This stays public for the MVP.
 import { Router } from "express";
 import { AuthenticatedRequest, requireAuth } from "../middleware/auth.middleware.js";
+import { rateLimit } from "../middleware/rate-limit.js";
 import { pickupService } from "../services/pickup.service.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import { optionalString, requiredNumber, requiredString } from "../utils/input.js";
@@ -18,7 +19,7 @@ pickupRouter.get("/mine", requireAuth, asyncHandler(async (request, response) =>
   });
 }));
 
-pickupRouter.post("/", asyncHandler(async (request, response) => {
+pickupRouter.post("/", rateLimit({ key: "pickup-create", limit: 30, windowMs: 60_000 }), asyncHandler(async (request, response) => {
   const intent = await pickupService.createIntent({
     shopId: requiredString(request.body.shopId, "shopId"),
     productId: requiredString(request.body.productId, "productId"),

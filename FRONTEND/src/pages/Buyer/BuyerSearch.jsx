@@ -14,6 +14,24 @@ import {
   getStockLabel,
 } from '../../lib/format.js';
 
+const PAGE_SIZE = 8;
+
+const paginateItems = (items, page) => {
+  const totalItems = items.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  const start = (page - 1) * PAGE_SIZE;
+
+  return {
+    items: items.slice(start, start + PAGE_SIZE),
+    pagination: {
+      page,
+      pageSize: PAGE_SIZE,
+      totalItems,
+      totalPages,
+    },
+  };
+};
+
 const buildFallbackInventory = async (location) => {
   const response = await discoveryApi.listShops(location);
   const shops = response.shops || [];
@@ -73,6 +91,13 @@ export default function BuyerSearch() {
   const containerRef = useRef(null);
   const { location } = useUserLocation();
   const currentQuery = searchParams.get('q') || '';
+  const currentPage = Math.max(1, Number(searchParams.get('page') || 1));
+  const [pagination, setPagination] = useState({
+    page: currentPage,
+    pageSize: PAGE_SIZE,
+    totalItems: 0,
+    totalPages: 1,
+  });
 
   useEffect(() => {
     setQuery(currentQuery);
@@ -99,17 +124,29 @@ export default function BuyerSearch() {
 
       try {
         const trimmedQuery = currentQuery.trim();
-        const nextResults = trimmedQuery
-          ? buildSearchCards(await discoveryApi.searchProducts({
+        const searchResponse = trimmedQuery
+          ? await discoveryApi.searchProducts({
               query: trimmedQuery,
               lat: location.lat,
               lng: location.lng,
               radiusKm: location.radiusKm,
-            }))
-          : await buildFallbackInventory(location);
+              page: currentPage,
+              pageSize: PAGE_SIZE,
+            })
+          : null;
+        const fallbackResponse = !trimmedQuery
+          ? paginateItems(await buildFallbackInventory(location), currentPage)
+          : null;
+        const nextResults = trimmedQuery
+          ? buildSearchCards(searchResponse)
+          : fallbackResponse.items;
+        const nextPagination = trimmedQuery
+          ? searchResponse.pagination
+          : fallbackResponse.pagination;
 
         if (active) {
           setResults(nextResults);
+          setPagination(nextPagination);
         }
       } catch (requestError) {
         if (active) {
@@ -128,7 +165,7 @@ export default function BuyerSearch() {
       active = false;
       window.clearTimeout(debounceHandle);
     };
-  }, [currentQuery, location]);
+  }, [currentPage, currentQuery, location]);
 
   const filters = useMemo(() => (
     ['All', 'Nearby', 'In Stock', ...new Set(results.map((item) => formatCategory(item.category)))]
@@ -148,7 +185,7 @@ export default function BuyerSearch() {
     })
   ), [activeFilter, results]);
 
-  const updateQuery = (nextQuery) => {
+  const updateParams = (nextQuery, nextPage = 1) => {
     setQuery(nextQuery);
     const nextParams = new URLSearchParams(searchParams);
 
@@ -158,8 +195,16 @@ export default function BuyerSearch() {
       nextParams.delete('q');
     }
 
+    if (nextPage > 1) {
+      nextParams.set('page', String(nextPage));
+    } else {
+      nextParams.delete('page');
+    }
+
     setSearchParams(nextParams, { replace: true });
   };
+
+  const setPage = (nextPage) => updateParams(query, nextPage);
 
   return (
     <div className={styles.searchPage} ref={containerRef}>
@@ -172,7 +217,7 @@ export default function BuyerSearch() {
             type="text"
             placeholder="Search products, shops, or categories..."
             value={query}
-            onChange={(event) => updateQuery(event.target.value)}
+            onChange={(event) => updateParams(event.target.value, 1)}
             autoFocus
           />
           <button className={styles.filterBtn} type="button" onClick={() => setActiveFilter('All')}>
@@ -231,6 +276,18 @@ export default function BuyerSearch() {
             </div>
           ))}
         </div>
+
+        {!loading && !error && pagination.totalPages > 1 && (
+          <div className={styles.pagination}>
+            <button type="button" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>
+              Previous
+            </button>
+            <span>Page {pagination.page} of {pagination.totalPages}</span>
+            <button type="button" disabled={currentPage >= pagination.totalPages} onClick={() => setPage(currentPage + 1)}>
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

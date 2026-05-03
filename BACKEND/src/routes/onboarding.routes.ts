@@ -2,6 +2,7 @@
 import { Router } from "express";
 import { PRODUCT_CATEGORIES, STOCK_STATUSES, isOneOf } from "../config.js";
 import { AuthenticatedRequest, requireAuth, requireShopOwner } from "../middleware/auth.middleware.js";
+import { rateLimit } from "../middleware/rate-limit.js";
 import { ownerService } from "../services/owner.service.js";
 import { onboardingService } from "../services/onboarding.service.js";
 import { shopService } from "../services/shop.service.js";
@@ -11,7 +12,7 @@ import { optionalNumber, optionalString, requiredNumber, requiredString, stringL
 
 export const onboardingRouter = Router();
 
-onboardingRouter.post("/analyze", asyncHandler(async (request, response) => {
+onboardingRouter.post("/analyze", rateLimit({ key: "onboarding-analyze", limit: 30, windowMs: 60_000 }), asyncHandler(async (request, response) => {
   const imageUrl = requiredString(request.body.imageUrl, "imageUrl");
   const rawText = optionalString(request.body.rawText);
   const manualHint = optionalString(request.body.manualHint);
@@ -20,7 +21,7 @@ onboardingRouter.post("/analyze", asyncHandler(async (request, response) => {
   response.json(await onboardingService.analyze({ imageUrl, rawText, manualHint, shopId }));
 }));
 
-onboardingRouter.post("/confirm", requireAuth, requireShopOwner, asyncHandler(async (request, response) => {
+onboardingRouter.post("/confirm", requireAuth, requireShopOwner, rateLimit({ key: "onboarding-confirm", limit: 30, windowMs: 60_000 }), asyncHandler(async (request, response) => {
   const authUser = (request as AuthenticatedRequest).authUser!;
   const shop = await ownerService.getOwnerShop(authUser.id);
 

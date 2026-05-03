@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Upload, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card/Card';
 import Button from '../../components/ui/Button/Button';
 import Input from '../../components/ui/Input/Input';
 import { APP_ROUTES } from '../../lib/routes.js';
-import { onboardingApi, ownerApi } from '../../lib/api.js';
+import { onboardingApi, ownerApi, uploadApi } from '../../lib/api.js';
 import styles from './AddProduct.module.scss';
 
 export default function AddProduct() {
@@ -17,6 +17,13 @@ export default function AddProduct() {
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState('');
   const [shopMissing, setShopMissing] = useState(false);
+  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : ''), [file]);
+
+  useEffect(() => () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+  }, [previewUrl]);
 
   useEffect(() => {
     let active = true;
@@ -60,7 +67,10 @@ export default function AddProduct() {
     setError('');
 
     try {
-      const imageUrl = `https://local-upload/${encodeURIComponent(file?.name || form.name || 'product')}`;
+      const upload = file
+        ? await uploadApi.uploadProductImage(file)
+        : { imageUrl: `https://local-upload/${encodeURIComponent(form.name || 'product')}` };
+      const imageUrl = upload.imageUrl;
       const analysis = await onboardingApi.analyze({
         imageUrl,
         rawText: form.desc.trim() || undefined,
@@ -103,7 +113,7 @@ export default function AddProduct() {
           <div className={styles.left}>
             <div className={`${styles.uploadZone} ${file ? styles.hasFile : ''}`}>
               {file ? (
-                <img src={URL.createObjectURL(file)} alt="Preview" className={styles.previewImg} />
+                <img src={previewUrl} alt="Preview" className={styles.previewImg} />
               ) : (
                 <div className={styles.uploadEmpty}>
                   <Upload size={32} className={styles.upIcon} />

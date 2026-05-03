@@ -61,6 +61,23 @@ const request = async (path, { method = 'GET', query, body, token, headers } = {
   return parseResponse(response);
 };
 
+const multipartRequest = async (path, { method = 'POST', formData, token, headers } = {}) => {
+  const resolvedHeaders = new Headers(headers || {});
+  const resolvedToken = token ?? authToken;
+
+  if (resolvedToken) {
+    resolvedHeaders.set('Authorization', `Bearer ${resolvedToken}`);
+  }
+
+  const response = await fetch(buildUrl(path), {
+    method,
+    headers: resolvedHeaders,
+    body: formData,
+  });
+
+  return parseResponse(response);
+};
+
 export const setAuthToken = (token) => {
   authToken = token || null;
 };
@@ -87,7 +104,7 @@ export const ownerApi = {
   createShop: (payload) => request('/owner/shop', { method: 'POST', body: payload }),
   updateShop: (payload) => request('/owner/shop', { method: 'PATCH', body: payload }),
   getAnalytics: () => request('/owner/analytics'),
-  getInventory: () => request('/owner/inventory'),
+  getInventory: (params) => request('/owner/inventory', { query: params }),
   upsertInventoryItem: (payload, productId) => request(
     productId ? `/owner/inventory/${productId}` : '/owner/inventory',
     {
@@ -101,6 +118,14 @@ export const ownerApi = {
     method: 'PATCH',
     body: { status },
   }),
+};
+
+export const uploadApi = {
+  uploadProductImage: async (file) => {
+    const formData = new FormData();
+    formData.set('image', file);
+    return multipartRequest('/uploads/product-image', { formData });
+  },
 };
 
 export const onboardingApi = {

@@ -4,6 +4,7 @@ import { PICKUP_INTENT_STATUSES, SHOP_TYPES, STOCK_STATUSES, isOneOf } from "../
 import { AuthenticatedRequest, requireAuth, requireShopOwner } from "../middleware/auth.middleware.js";
 import { ownerService } from "../services/owner.service.js";
 import { pickupService } from "../services/pickup.service.js";
+import { rateLimit } from "../middleware/rate-limit.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import { badRequest, notFound } from "../utils/api-error.js";
 import { optionalNumber, optionalString, requiredNumber, requiredString } from "../utils/input.js";
@@ -126,16 +127,24 @@ ownerRouter.patch("/shop", asyncHandler(async (request, response) => {
 
 ownerRouter.get("/inventory", asyncHandler(async (request, response) => {
   const authUser = getOwnerUser(request as AuthenticatedRequest);
-  const inventory = await ownerService.getOwnerInventory(authUser.id);
+  const inventory = await ownerService.getOwnerInventoryPage(authUser.id, {
+    page: optionalNumber(request.query.page, "page"),
+    pageSize: optionalNumber(request.query.pageSize, "pageSize"),
+    query: optionalString(request.query.query),
+    stockStatus: optionalString(request.query.stockStatus) as typeof STOCK_STATUSES[number] | undefined
+  });
 
   if (!inventory) {
     throw notFound(missingShopMessage);
   }
 
-  response.json({ inventory });
+  response.json({
+    inventory: inventory.items,
+    pagination: inventory.pagination
+  });
 }));
 
-ownerRouter.post("/inventory", asyncHandler(async (request, response) => {
+ownerRouter.post("/inventory", rateLimit({ key: "inventory-write", limit: 40, windowMs: 60_000 }), asyncHandler(async (request, response) => {
   const authUser = getOwnerUser(request as AuthenticatedRequest);
   const inventoryItem = await ownerService.upsertOwnerInventoryItem(authUser.id, readInventoryInput(request.body));
 
@@ -146,7 +155,7 @@ ownerRouter.post("/inventory", asyncHandler(async (request, response) => {
   response.status(201).json(inventoryItem);
 }));
 
-ownerRouter.patch("/inventory/:productId", asyncHandler(async (request, response) => {
+ownerRouter.patch("/inventory/:productId", rateLimit({ key: "inventory-write", limit: 40, windowMs: 60_000 }), asyncHandler(async (request, response) => {
   const authUser = getOwnerUser(request as AuthenticatedRequest);
   const inventoryItem = await ownerService.upsertOwnerInventoryItem(
     authUser.id,

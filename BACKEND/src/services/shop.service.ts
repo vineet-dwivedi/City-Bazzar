@@ -8,6 +8,7 @@ import {
 import { catalogService } from "./catalog.service.js";
 import { dataStore } from "./store.js";
 import { ShopProfileUpdateInput } from "../data/store.types.js";
+import { slicePage } from "../utils/pagination.js";
 
 class ShopService {
   async registerShop(input: {
@@ -172,6 +173,47 @@ class ShopService {
     }
 
     return dataStore.listInventoryByShop(shop.id);
+  }
+
+  async getOwnedInventoryPage(ownerUserId: string, options: {
+    page?: number;
+    pageSize?: number;
+    query?: string;
+    stockStatus?: StockStatus;
+  }) {
+    const shop = await dataStore.findShopByOwnerId(ownerUserId);
+
+    if (!shop) {
+      return null;
+    }
+
+    const inventory = await dataStore.listInventoryByShop(shop.id);
+    const inventoryWithProducts = await Promise.all(
+      inventory.map(async (item) => ({
+        ...item,
+        product: await catalogService.findById(item.productId)
+      }))
+    );
+    const normalizedQuery = options.query?.trim().toLowerCase();
+    const filtered = inventoryWithProducts.filter((item) => {
+      if (!item.product) {
+        return false;
+      }
+
+      if (options.stockStatus && item.stockStatus !== options.stockStatus) {
+        return false;
+      }
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      return `${item.product.name} ${item.product.brand} ${item.product.category}`
+        .toLowerCase()
+        .includes(normalizedQuery);
+    });
+
+    return slicePage(filtered, options);
   }
 
   async upsertOwnedInventoryItem(ownerUserId: string, input: {

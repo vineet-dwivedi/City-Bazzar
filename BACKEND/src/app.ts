@@ -9,13 +9,16 @@ import { ownerRouter } from "./routes/owner.routes.js";
 import { pickupRouter } from "./routes/pickup.routes.js";
 import { searchRouter } from "./routes/search.routes.js";
 import { shopRouter } from "./routes/shops.routes.js";
+import { uploadRouter } from "./routes/upload.routes.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { APP_LABEL } from "./config.js";
+import { uploadService } from "./services/upload.service.js";
 
 export const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static(uploadService.getUploadDir()));
 
 app.get("/", (_request, response) => {
   // Keep the root response tiny so local testing is easy.
@@ -32,6 +35,7 @@ app.get("/", (_request, response) => {
       "/api/catalog",
       "/api/catalog/search",
       "/api/search/products",
+      "/api/uploads/product-image",
       "/api/onboarding/analyze",
       "/api/onboarding/confirm"
     ]
@@ -45,6 +49,7 @@ app.use("/api/shops", shopRouter);
 app.use("/api/pickup-intents", pickupRouter);
 app.use("/api/catalog", catalogRouter);
 app.use("/api/search", searchRouter);
+app.use("/api/uploads", uploadRouter);
 app.use("/api/onboarding", onboardingRouter);
 
 app.use(notFoundHandler);
