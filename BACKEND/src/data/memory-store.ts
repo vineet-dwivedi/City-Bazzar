@@ -310,6 +310,7 @@ export class MemoryDataStore implements DataStore {
       rawOcrText: input.rawOcrText,
       manualHint: input.manualHint,
       analysis: input.analysis,
+      modelMeta: input.modelMeta,
       status: "analyzed",
       createdAt: now,
       updatedAt: now

@@ -1,14 +1,13 @@
-// Onboarding orchestration stays compact: OCR -> catalog match -> extraction -> notes.
+// Onboarding stays compact: provider extract -> catalog match -> save traceable session.
 import { OnboardingAnalysis } from "../types.js";
+import { catalogService } from "./catalog.service.js";
 import { dataStore } from "./store.js";
-import { CatalogMatcher } from "./ai/catalog-matcher.js";
-import { LocalExtractionProvider } from "./ai/local-extraction.provider.js";
-import { LocalOcrProvider } from "./ai/local-ocr.provider.js";
+import { LocalAiProvider } from "./ai/local-ai.provider.js";
+import { createAiProvider } from "./ai/provider.js";
 
 class OnboardingService {
-  private readonly ocrProvider = new LocalOcrProvider();
-  private readonly extractionProvider = new LocalExtractionProvider();
-  private readonly catalogMatcher = new CatalogMatcher();
+  private readonly aiProvider = createAiProvider();
+  private readonly fallbackProvider = new LocalAiProvider();
 
   async analyze(input: {
     imageUrl: string;
@@ -16,34 +15,25 @@ class OnboardingService {
     manualHint?: string;
     shopId?: string;
   }): Promise<OnboardingAnalysis> {
-    const combinedText = await this.ocrProvider.readText(input);
-    const bestMatch = await this.catalogMatcher.match(combinedText);
-    const inferredBrand = bestMatch?.product.brand ?? await this.catalogMatcher.inferBrand(combinedText) ?? "Local Brand";
-    const extracted = this.extractionProvider.extract({
-      text: combinedText,
-      fallbackBrand: inferredBrand,
-      fallbackCategory: bestMatch?.product.category,
-      fallbackName: bestMatch?.product.name
+    const draft = await this.readDraft(input);
+    const bestMatch = await catalogService.findBestStructuredMatch({
+      name: draft.extracted.name,
+      brand: draft.extracted.brand,
+      category: draft.extracted.category,
+      keywords: draft.keywords
     });
-    const confidence = bestMatch?.score ?? Math.min(0.45, extracted.keywords.length * 0.08);
-    const notes = this.buildNotes({
-      rawText: input.rawText,
-      mrp: extracted.mrp,
-      confidence
-    });
-
+    const confidence = bestMatch ? Math.max(bestMatch.score, draft.confidence) : draft.confidence;
     const analysis: OnboardingAnalysis = {
+      meta: {
+        provider: draft.provider,
+        model: draft.model,
+        extractionConfidence: Number(draft.confidence.toFixed(2))
+      },
       source: {
         imageUrl: input.imageUrl,
-        combinedText
+        combinedText: draft.combinedText
       },
-      extracted: {
-        name: extracted.name,
-        brand: extracted.brand,
-        category: extracted.category,
-        mrp: extracted.mrp,
-        price: extracted.price
-      },
+      extracted: draft.extracted,
       catalogMatch: bestMatch && bestMatch.score >= 0.6
         ? {
             status: "existing",
@@ -54,8 +44,12 @@ class OnboardingService {
             status: "new",
             confidence: Number(confidence.toFixed(2))
           },
-      suggestedKeywords: extracted.keywords,
-      notes
+      suggestedKeywords: draft.keywords,
+      notes: this.buildNotes(draft.notes, {
+        usedFallback: draft.provider === "local" && (process.env.AI_PROVIDER ?? "local") === "openai",
+        mrp: draft.extracted.mrp,
+        confidence
+      })
     };
 
     if (input.shopId) {
@@ -64,23 +58,41 @@ class OnboardingService {
         sourceImageUrl: input.imageUrl,
         rawOcrText: input.rawText,
         manualHint: input.manualHint,
-        analysis
+        analysis,
+        modelMeta: {
+          provider: draft.provider,
+          model: draft.model,
+          confidence: analysis.meta.extractionConfidence
+        }
       });
     }
 
     return analysis;
   }
 
-  private buildNotes(input: {
+  private async readDraft(input: {
+    imageUrl: string;
     rawText?: string;
-    mrp: number | null;
-    confidence: number;
+    manualHint?: string;
   }) {
-    const notes: string[] = [];
-
-    if (!input.rawText) {
-      notes.push("OCR text is currently derived from upload naming and owner hints.");
+    try {
+      return await this.aiProvider.analyze(input);
+    } catch (error) {
+      const fallback = await this.fallbackProvider.analyze(input);
+      fallback.notes.unshift(`Primary AI provider failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+      return fallback;
     }
+  }
+
+  private buildNotes(
+    providerNotes: string[],
+    input: {
+      usedFallback: boolean;
+      mrp: number | null;
+      confidence: number;
+    }
+  ) {
+    const notes = [...providerNotes];
 
     if (!input.mrp) {
       notes.push("Price was not confidently detected. Please verify MRP manually.");
@@ -88,6 +100,10 @@ class OnboardingService {
 
     if (input.confidence < 0.6) {
       notes.push("Catalog confidence is low. Confirm carefully before saving.");
+    }
+
+    if (input.usedFallback) {
+      notes.push("Local fallback handled this upload because the external AI provider was unavailable.");
     }
 
     return notes;

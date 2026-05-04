@@ -82,6 +82,11 @@ export interface OnboardingSessionCreateInput {
   rawOcrText?: string;
   manualHint?: string;
   analysis: OnboardingAnalysis;
+  modelMeta?: {
+    provider: string;
+    model: string;
+    confidence: number;
+  };
   createdByUserId?: string;
 }
 

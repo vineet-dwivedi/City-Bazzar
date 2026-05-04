@@ -80,6 +80,11 @@ export interface InventoryItem {
 
 export interface OnboardingAnalysis {
   sessionId?: string;
+  meta: {
+    provider: string;
+    model: string;
+    extractionConfidence: number;
+  };
   source: {
     imageUrl: string;
     combinedText: string;
