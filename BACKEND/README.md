@@ -22,7 +22,7 @@ Node.js + TypeScript backend for the UrbnBzr hyperlocal discovery platform.
 ## MVP assumptions
 
 - Data can run in `memory` or `mongo` mode
-- Product onboarding uses a simple local extractor with `imageUrl`, `rawText`, and `manualHint`
+- Product onboarding can run with local fallback or `OpenAI` vision extraction
 - Orders, payments, delivery logistics, and hardware sync are intentionally out of scope
 
 ## Run locally
@@ -91,6 +91,9 @@ Create a local `.env` from `.env.example` when you want to switch to Mongo mode 
 - `POST /api/onboarding/analyze`
 - `POST /api/onboarding/confirm`
 
+Set `AI_PROVIDER=openai` plus `OPENAI_API_KEY` to enable real vision extraction.
+If those are missing or fail, the backend falls back to the local heuristic extractor.
+
 ## Suggested frontend flow
 
 1. Shop owner creates an account and a shop profile.
@@ -101,6 +104,6 @@ Create a local `.env` from `.env.example` when you want to switch to Mongo mode 
 
 ## Next upgrades
 
-- Connect real OCR and image classification services
-- Add Redis caching for hot search queries
-- Add customer auth flows and richer owner dashboards
+- Move uploads from local disk to cloud storage
+- Add automated API/integration tests
+- Add monitoring and error tracking

@@ -267,17 +267,22 @@ class ShopService {
     const existingProduct = input.catalogProductId
       ? await catalogService.findById(input.catalogProductId)
       : undefined;
-
-    const product =
-      existingProduct ??
-      await catalogService.createProduct({
-        name: input.name,
-        brand: input.brand,
-        category: input.category,
-        mrp: input.mrp,
-        keywords: input.keywords,
-        imageHints: input.imageUrl ? [input.imageUrl] : []
-      });
+    const resolution =
+      existingProduct
+        ? {
+            product: existingProduct,
+            status: "linked_existing" as const,
+            confidence: 1
+          }
+        : await catalogService.resolveOrCreateProduct({
+            name: input.name,
+            brand: input.brand,
+            category: input.category,
+            mrp: input.mrp,
+            keywords: input.keywords,
+            imageHints: input.imageUrl ? [input.imageUrl] : []
+          });
+    const product = resolution.product;
 
     const inventoryItem = await dataStore.upsertInventoryItem({
       shopId: input.shopId,
@@ -319,7 +324,11 @@ class ShopService {
 
     return {
       product,
-      inventoryItem
+      inventoryItem,
+      catalogResolution: {
+        status: resolution.status,
+        confidence: Number(resolution.confidence.toFixed(2))
+      }
     };
   }
 }
