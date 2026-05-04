@@ -1,9 +1,7 @@
-import path from "node:path";
-import { readFile } from "node:fs/promises";
 import { PRODUCT_CATEGORIES } from "../../config.js";
 import { badRequest } from "../../utils/api-error.js";
 import { extractPrice, titleCase, tokenize, uniqueStrings } from "../../utils/text.js";
-import { uploadService } from "../upload.service.js";
+import { toImageDataUrl } from "./image-source.js";
 import { AiAnalysisDraft, AiAnalyzeInput, AiProvider } from "./provider.types.js";
 
 const schema = {
@@ -32,15 +30,6 @@ const schema = {
     }
   }
 } as const;
-
-const mimeByExtension: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".webp": "image/webp"
-};
-
-const localhostHosts = new Set(["localhost", "127.0.0.1"]);
 
 const prompt = [
   "You analyze a retail product image for a pickup-first local commerce app.",
@@ -133,40 +122,12 @@ export class OpenAiVisionProvider implements AiProvider {
   }
 
   private async buildImageInput(imageUrl: string) {
-    const dataUrl = await this.toDataUrl(imageUrl);
+    const dataUrl = await toImageDataUrl(imageUrl);
     return {
       type: "input_image" as const,
       image_url: dataUrl ?? imageUrl,
       detail: "high" as const
     };
-  }
-
-  private async toDataUrl(imageUrl: string) {
-    if (imageUrl.startsWith("data:")) {
-      return imageUrl;
-    }
-
-    const parsed = this.tryParseUrl(imageUrl);
-    const pathname = parsed?.pathname ?? (imageUrl.startsWith("/uploads/") ? imageUrl : "");
-
-    if (!pathname.startsWith("/uploads/") && !pathname.includes("\\uploads\\") && !pathname.includes("/uploads/")) {
-      return undefined;
-    }
-
-    const filename = path.basename(pathname);
-    const buffer = await readFile(path.join(uploadService.getUploadDir(), filename));
-    const extension = path.extname(filename).toLowerCase();
-    const mimeType = mimeByExtension[extension] ?? "image/jpeg";
-    return `data:${mimeType};base64,${buffer.toString("base64")}`;
-  }
-
-  private tryParseUrl(value: string) {
-    try {
-      const parsed = new URL(value);
-      return localhostHosts.has(parsed.hostname) ? parsed : undefined;
-    } catch {
-      return undefined;
-    }
   }
 
   private readStructuredJson(payload: OpenAiResponsePayload) {
