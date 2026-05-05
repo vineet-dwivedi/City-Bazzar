@@ -36,3 +36,7 @@ export const rateLimit = (options: {
   current.count += 1;
   next();
 };
+
+export const resetRateLimitsForTests = () => {
+  buckets.clear();
+};

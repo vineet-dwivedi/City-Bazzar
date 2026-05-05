@@ -2,12 +2,13 @@
 import "dotenv/config";
 import { app } from "./app.js";
 import { APP_LABEL } from "./config.js";
+import { env, validateEnv } from "./env.js";
 import { dataStore, initializeDataStore } from "./services/store.js";
 
-const port = Number(process.env.PORT ?? 4000);
+validateEnv();
 
 await initializeDataStore();
 
-app.listen(port, () => {
-  console.log(`${APP_LABEL} backend listening on port ${port} using ${dataStore.mode} store`);
+app.listen(env.port, () => {
+  console.log(`${APP_LABEL} backend listening on port ${env.port} using ${dataStore.mode} store`);
 });

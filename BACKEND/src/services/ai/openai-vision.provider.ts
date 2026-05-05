@@ -1,4 +1,5 @@
 import { PRODUCT_CATEGORIES } from "../../config.js";
+import { env } from "../../env.js";
 import { badRequest } from "../../utils/api-error.js";
 import { extractPrice, titleCase, tokenize, uniqueStrings } from "../../utils/text.js";
 import { toImageDataUrl } from "./image-source.js";
@@ -51,9 +52,9 @@ type OpenAiResponsePayload = {
 };
 
 export class OpenAiVisionProvider implements AiProvider {
-  private readonly apiKey = process.env.OPENAI_API_KEY;
-  private readonly model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
-  private readonly baseUrl = (process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, "");
+  private readonly apiKey = env.openAiApiKey;
+  private readonly model = env.openAiModel;
+  private readonly baseUrl = env.openAiBaseUrl.replace(/\/$/, "");
 
   async analyze(input: AiAnalyzeInput): Promise<AiAnalysisDraft> {
     if (!this.apiKey) {

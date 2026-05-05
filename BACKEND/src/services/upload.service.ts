@@ -1,16 +1,23 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { env } from "../env.js";
 import { badRequest } from "../utils/api-error.js";
 
-const defaultUploadDir = path.resolve(process.cwd(), "uploads");
 const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
-const maxFileSizeBytes = Number(process.env.UPLOAD_MAX_FILE_SIZE_MB ?? 5) * 1024 * 1024;
 
 // Local disk storage keeps production wiring simple until cloud storage is added.
 class UploadService {
   getUploadDir() {
-    return process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : defaultUploadDir;
+    return env.uploadDir;
+  }
+
+  getAllowedMimeTypes() {
+    return [...allowedMimeTypes];
+  }
+
+  getMaxFileSizeBytes() {
+    return env.uploadMaxFileSizeBytes;
   }
 
   async saveProductImage(file: Express.Multer.File) {
@@ -18,8 +25,8 @@ class UploadService {
       throw badRequest("Only JPG, PNG, or WEBP images are allowed.");
     }
 
-    if (file.size > maxFileSizeBytes) {
-      throw badRequest(`Image must be smaller than ${Math.round(maxFileSizeBytes / (1024 * 1024))} MB.`);
+    if (file.size > env.uploadMaxFileSizeBytes) {
+      throw badRequest(`Image must be smaller than ${Math.round(env.uploadMaxFileSizeBytes / (1024 * 1024))} MB.`);
     }
 
     const uploadDir = this.getUploadDir();
