@@ -7,7 +7,18 @@ import { badRequest } from "../utils/api-error.js";
 import { uploadService } from "../services/upload.service.js";
 
 export const uploadRouter = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: uploadService.getMaxFileSizeBytes() },
+  fileFilter: (_request, file, callback) => {
+    if (!uploadService.getAllowedMimeTypes().includes(file.mimetype)) {
+      callback(badRequest("Only JPG, PNG, or WEBP images are allowed."));
+      return;
+    }
+
+    callback(null, true);
+  }
+});
 
 uploadRouter.post(
   "/product-image",

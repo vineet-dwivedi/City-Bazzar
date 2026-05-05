@@ -1,0 +1,37 @@
+services:
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  backend:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATA_STORE_MODE: mongo
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DB_NAME: urbnbzr
+      MONGODB_SEED_ON_START: "true"
+      JWT_SECRET: compose-local-secret
+      AUTH_TOKEN_EXPIRES_IN: 7d
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+      REQUEST_BODY_LIMIT_MB: 2
+      TRUST_PROXY: "false"
+      UPLOAD_DIR: /app/uploads
+      UPLOAD_MAX_FILE_SIZE_MB: 5
+      AI_PROVIDER: local
+    volumes:
+      - uploads-data:/app/uploads
+
+volumes:
+  mongo-data:
+  uploads-data:

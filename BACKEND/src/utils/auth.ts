@@ -1,6 +1,7 @@
 // Password and token helpers stay isolated from route code.
 import bcrypt from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
+import { env } from "../env.js";
 
 export interface AuthTokenPayload {
   sub: string;
@@ -8,7 +9,7 @@ export interface AuthTokenPayload {
 }
 
 const getJwtSecret = () => {
-  const secret = process.env.JWT_SECRET;
+  const secret = env.jwtSecret;
 
   if (!secret) {
     throw new Error("JWT_SECRET is required for auth routes.");
@@ -23,7 +24,7 @@ export const verifyPassword = async (password: string, passwordHash: string) =>
 
 export const signAuthToken = (payload: AuthTokenPayload) =>
   jwt.sign(payload, getJwtSecret(), {
-    expiresIn: (process.env.AUTH_TOKEN_EXPIRES_IN ?? "7d") as SignOptions["expiresIn"]
+    expiresIn: env.authTokenExpiresIn as SignOptions["expiresIn"]
   });
 
 export const verifyAuthToken = (token: string) =>

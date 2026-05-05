@@ -11,7 +11,7 @@ searchRouter.get("/products", rateLimit({ key: "search", limit: 90, windowMs: 60
   const query = requiredString(request.query.query, "query");
   const lat = requiredNumber(request.query.lat, "lat");
   const lng = requiredNumber(request.query.lng, "lng");
-  const radiusKm = requiredNumber(request.query.radiusKm ?? process.env.DEFAULT_SEARCH_RADIUS_KM ?? 5, "radiusKm");
+  const radiusKm = requiredNumber(request.query.radiusKm ?? 5, "radiusKm");
   const page = optionalNumber(request.query.page, "page");
   const pageSize = optionalNumber(request.query.pageSize, "pageSize");
 

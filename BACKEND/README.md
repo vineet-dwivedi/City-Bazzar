@@ -22,7 +22,7 @@ Node.js + TypeScript backend for the UrbnBzr hyperlocal discovery platform.
 ## MVP assumptions
 
 - Data can run in `memory` or `mongo` mode
-- Product onboarding can run with local fallback or `OpenAI` vision extraction
+- Product onboarding can run with local fallback, free `Tesseract` OCR, or `OpenAI` vision extraction
 - Orders, payments, delivery logistics, and hardware sync are intentionally out of scope
 
 ## Run locally
@@ -37,6 +37,14 @@ Server runs on `http://localhost:4000` by default.
 If your environment skips dev dependencies, run `npm install --include=dev` before `npm run dev`.
 Create a local `.env` from `.env.example` when you want to switch to Mongo mode or change defaults.
 
+## Tests
+
+```bash
+npm test
+```
+
+The test suite covers auth, upload, onboarding, search, pickup, and readiness.
+
 ### Storage modes
 
 - `DATA_STORE_MODE=memory` keeps the current seeded demo behavior
@@ -48,6 +56,7 @@ Create a local `.env` from `.env.example` when you want to switch to Mongo mode 
 ### Health
 
 - `GET /api/health`
+- `GET /api/health/ready`
 
 ### Auth
 
@@ -91,8 +100,12 @@ Create a local `.env` from `.env.example` when you want to switch to Mongo mode 
 - `POST /api/onboarding/analyze`
 - `POST /api/onboarding/confirm`
 
-Set `AI_PROVIDER=openai` plus `OPENAI_API_KEY` to enable real vision extraction.
-If those are missing or fail, the backend falls back to the local heuristic extractor.
+Set one of these modes:
+- `AI_PROVIDER=local` for zero-cost heuristic extraction
+- `AI_PROVIDER=tesseract` for free OCR-based extraction
+- `AI_PROVIDER=openai` plus `OPENAI_API_KEY` for vision extraction
+
+If the selected provider fails, the backend falls back to the local extractor.
 
 ## Suggested frontend flow
 
@@ -105,5 +118,17 @@ If those are missing or fail, the backend falls back to the local heuristic extr
 ## Next upgrades
 
 - Move uploads from local disk to cloud storage
-- Add automated API/integration tests
+- Add frontend flow tests
 - Add monitoring and error tracking
+
+## Docker
+
+```bash
+docker compose up --build
+```
+
+This starts:
+- `mongo` on `27017`
+- backend on `4000`
+
+Before real deployment, change `JWT_SECRET` and tighten `CORS_ORIGINS`.
