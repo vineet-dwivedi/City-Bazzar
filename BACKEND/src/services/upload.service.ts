@@ -1,16 +1,14 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
 import { env } from "../env.js";
 import { badRequest } from "../utils/api-error.js";
+import { createStorageProvider } from "./storage/provider.js";
+import { LocalStorageProvider } from "./storage/local-storage.provider.js";
+import { PublicRequestContext } from "./storage/provider.types.js";
 
 const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-// Local disk storage keeps production wiring simple until cloud storage is added.
+// Upload service keeps validation centralized and storage-provider agnostic.
 class UploadService {
-  getUploadDir() {
-    return env.uploadDir;
-  }
+  private readonly provider = createStorageProvider();
 
   getAllowedMimeTypes() {
     return [...allowedMimeTypes];
@@ -20,7 +18,21 @@ class UploadService {
     return env.uploadMaxFileSizeBytes;
   }
 
-  async saveProductImage(file: Express.Multer.File) {
+  getStorageMode() {
+    return this.provider.mode;
+  }
+
+  getUploadDir() {
+    return this.provider instanceof LocalStorageProvider
+      ? this.provider.getUploadDir()
+      : env.uploadDir;
+  }
+
+  usesLocalDisk() {
+    return this.provider.mode === "local";
+  }
+
+  async saveProductImage(file: Express.Multer.File, request: PublicRequestContext) {
     if (!allowedMimeTypes.has(file.mimetype)) {
       throw badRequest("Only JPG, PNG, or WEBP images are allowed.");
     }
@@ -29,36 +41,7 @@ class UploadService {
       throw badRequest(`Image must be smaller than ${Math.round(env.uploadMaxFileSizeBytes / (1024 * 1024))} MB.`);
     }
 
-    const uploadDir = this.getUploadDir();
-    await mkdir(uploadDir, { recursive: true });
-
-    const extension = this.resolveExtension(file);
-    const filename = `product-${randomUUID()}${extension}`;
-    const filePath = path.join(uploadDir, filename);
-
-    await writeFile(filePath, file.buffer);
-
-    return {
-      filename,
-      filePath
-    };
-  }
-
-  buildPublicUrl(request: { protocol: string; get(name: string): string | undefined }, filename: string) {
-    const host = request.get("host");
-    return `${request.protocol}://${host}/uploads/${filename}`;
-  }
-
-  private resolveExtension(file: Express.Multer.File) {
-    if (file.mimetype === "image/png") {
-      return ".png";
-    }
-
-    if (file.mimetype === "image/webp") {
-      return ".webp";
-    }
-
-    return ".jpg";
+    return this.provider.saveProductImage(file, request);
   }
 }
 

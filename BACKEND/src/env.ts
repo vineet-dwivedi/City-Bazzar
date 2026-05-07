@@ -3,6 +3,7 @@ import { DEFAULT_DB_NAME } from "./config.js";
 
 type StoreMode = "memory" | "mongo";
 type AiProviderMode = "local" | "tesseract" | "openai";
+type FileStorageProviderMode = "local" | "cloudinary";
 
 const readString = (value: string | undefined, fallback?: string) => {
   const normalized = value?.trim();
@@ -48,6 +49,7 @@ const nodeEnv = readString(process.env.NODE_ENV, "development")!;
 const isProduction = nodeEnv === "production";
 const dataStoreMode = readChoice(process.env.DATA_STORE_MODE, ["memory", "mongo"] as const, "memory");
 const aiProvider = readChoice(process.env.AI_PROVIDER, ["local", "tesseract", "openai"] as const, "local");
+const fileStorageProvider = readChoice(process.env.FILE_STORAGE_PROVIDER, ["local", "cloudinary"] as const, "local");
 const jwtSecret = readString(process.env.JWT_SECRET, "change-this-in-real-use")!;
 const uploadMaxFileSizeMb = readNumber(process.env.UPLOAD_MAX_FILE_SIZE_MB, 5);
 
@@ -68,6 +70,11 @@ export const env = {
   uploadMaxFileSizeMb,
   uploadMaxFileSizeBytes: uploadMaxFileSizeMb * 1024 * 1024,
   aiProvider: aiProvider as AiProviderMode,
+  fileStorageProvider: fileStorageProvider as FileStorageProviderMode,
+  cloudinaryCloudName: readString(process.env.CLOUDINARY_CLOUD_NAME),
+  cloudinaryApiKey: readString(process.env.CLOUDINARY_API_KEY),
+  cloudinaryApiSecret: readString(process.env.CLOUDINARY_API_SECRET),
+  cloudinaryFolder: readString(process.env.CLOUDINARY_FOLDER, "urbnbzr/products")!,
   openAiApiKey: readString(process.env.OPENAI_API_KEY),
   openAiModel: readString(process.env.OPENAI_MODEL, "gpt-4.1-mini")!,
   openAiBaseUrl: readString(process.env.OPENAI_BASE_URL, "https://api.openai.com/v1")!
@@ -89,5 +96,11 @@ export const validateEnv = () => {
 
   if (env.aiProvider === "openai" && !env.openAiApiKey) {
     throw new Error("OPENAI_API_KEY is required when AI_PROVIDER=openai.");
+  }
+
+  if (env.fileStorageProvider === "cloudinary") {
+    if (!env.cloudinaryCloudName || !env.cloudinaryApiKey || !env.cloudinaryApiSecret) {
+      throw new Error("Cloudinary credentials are required when FILE_STORAGE_PROVIDER=cloudinary.");
+    }
   }
 };
