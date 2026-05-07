@@ -26,6 +26,7 @@ services:
       CORS_ORIGINS: http://localhost:5173,http://localhost:3000
       REQUEST_BODY_LIMIT_MB: 2
       TRUST_PROXY: "false"
+      FILE_STORAGE_PROVIDER: local
       UPLOAD_DIR: /app/uploads
       UPLOAD_MAX_FILE_SIZE_MB: 5
       AI_PROVIDER: local

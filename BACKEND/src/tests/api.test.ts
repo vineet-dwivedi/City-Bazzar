@@ -98,6 +98,7 @@ test("owner can upload, analyze, confirm, search, and create a pickup request", 
 
   assert.equal(upload.status, 201);
   assert.match(upload.body.imageUrl, /\/uploads\/product-/);
+  assert.equal(upload.body.storage, "local");
 
   const analysis = await request(app).post("/api/onboarding/analyze").send({
     imageUrl: upload.body.imageUrl,

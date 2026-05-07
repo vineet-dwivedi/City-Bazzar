@@ -37,7 +37,10 @@ app.use(cors({
 }));
 app.use(express.json({ limit: `${env.requestBodyLimitMb}mb` }));
 app.use(express.urlencoded({ extended: true, limit: `${env.requestBodyLimitMb}mb` }));
-app.use("/uploads", express.static(uploadService.getUploadDir()));
+
+if (uploadService.usesLocalDisk()) {
+  app.use("/uploads", express.static(uploadService.getUploadDir()));
+}
 
 app.get("/", (_request, response) => {
   // Keep the root response tiny so local testing is easy.
