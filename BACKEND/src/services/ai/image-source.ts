@@ -47,6 +47,20 @@ export const toImageDataUrl = async (imageUrl: string) => {
   return `data:${mimeType};base64,${buffer.toString("base64")}`;
 };
 
+export const toInlineImageData = async (imageUrl: string) => {
+  const dataUrl = await toImageDataUrl(imageUrl) ?? await fetchAsDataUrl(imageUrl);
+  const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
+
+  if (!match) {
+    throw new Error("Image could not be converted to inline base64 data.");
+  }
+
+  return {
+    mimeType: match[1],
+    data: match[2]
+  };
+};
+
 const tryParseUrl = (value: string) => {
   try {
     const parsed = new URL(value);
@@ -54,4 +68,16 @@ const tryParseUrl = (value: string) => {
   } catch {
     return undefined;
   }
+};
+
+const fetchAsDataUrl = async (imageUrl: string) => {
+  const response = await fetch(imageUrl);
+
+  if (!response.ok) {
+    throw new Error(`Image fetch failed (${response.status}).`);
+  }
+
+  const mimeType = response.headers.get("content-type")?.split(";")[0] ?? "image/jpeg";
+  const buffer = Buffer.from(await response.arrayBuffer());
+  return `data:${mimeType};base64,${buffer.toString("base64")}`;
 };

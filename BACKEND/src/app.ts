@@ -12,6 +12,7 @@ import { searchRouter } from "./routes/search.routes.js";
 import { shopRouter } from "./routes/shops.routes.js";
 import { uploadRouter } from "./routes/upload.routes.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
+import { requestLogger } from "./middleware/request-logger.js";
 import { securityHeaders } from "./middleware/security.middleware.js";
 import { APP_LABEL } from "./config.js";
 import { uploadService } from "./services/upload.service.js";
@@ -24,6 +25,7 @@ if (env.trustProxy) {
   app.set("trust proxy", 1);
 }
 
+app.use(requestLogger);
 app.use(securityHeaders);
 app.use(cors({
   origin(origin, callback) {

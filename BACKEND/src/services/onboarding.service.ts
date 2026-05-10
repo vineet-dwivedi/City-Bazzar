@@ -1,4 +1,5 @@
 // Onboarding stays compact: provider extract -> catalog match -> save traceable session.
+import { env } from "../env.js";
 import { OnboardingAnalysis } from "../types.js";
 import { catalogService } from "./catalog.service.js";
 import { dataStore } from "./store.js";
@@ -46,7 +47,7 @@ class OnboardingService {
           },
       suggestedKeywords: draft.keywords,
       notes: this.buildNotes(draft.notes, {
-        usedFallback: draft.provider === "local" && (process.env.AI_PROVIDER ?? "local") === "openai",
+        usedFallback: draft.provider === "local" && env.aiProvider === "gemini",
         mrp: draft.extracted.mrp,
         confidence
       })
