@@ -1,5 +1,5 @@
 import { LocalAiProvider } from "./local-ai.provider.js";
-import { OpenAiVisionProvider } from "./openai-vision.provider.js";
+import { GeminiVisionProvider } from "./gemini-vision.provider.js";
 import { TesseractAiProvider } from "./tesseract-ai.provider.js";
 import { env } from "../../env.js";
 import { AiProvider } from "./provider.types.js";
@@ -8,8 +8,8 @@ import { AiProvider } from "./provider.types.js";
 export const createAiProvider = (): AiProvider => {
   const provider = env.aiProvider;
 
-  if (provider === "openai" && env.openAiApiKey) {
-    return new OpenAiVisionProvider();
+  if (provider === "gemini" && env.geminiApiKey) {
+    return new GeminiVisionProvider();
   }
 
   if (provider === "tesseract") {

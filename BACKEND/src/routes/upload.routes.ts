@@ -31,11 +31,12 @@ uploadRouter.post(
       throw badRequest("image is required.");
     }
 
-    const uploaded = await uploadService.saveProductImage(request.file);
+    const uploaded = await uploadService.saveProductImage(request.file, request);
 
     response.status(201).json({
-      imageUrl: uploadService.buildPublicUrl(request, uploaded.filename),
-      filename: uploaded.filename
+      imageUrl: uploaded.imageUrl,
+      key: uploaded.key,
+      storage: uploadService.getStorageMode()
     });
   })
 );

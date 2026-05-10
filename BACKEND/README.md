@@ -22,7 +22,8 @@ Node.js + TypeScript backend for the UrbnBzr hyperlocal discovery platform.
 ## MVP assumptions
 
 - Data can run in `memory` or `mongo` mode
-- Product onboarding can run with local fallback, free `Tesseract` OCR, or `OpenAI` vision extraction
+- Product onboarding can run with local fallback, free `Tesseract` OCR, or `Gemini` vision extraction
+- Image storage can stay local or switch to `Cloudinary`
 - Orders, payments, delivery logistics, and hardware sync are intentionally out of scope
 
 ## Run locally
@@ -44,6 +45,16 @@ npm test
 ```
 
 The test suite covers auth, upload, onboarding, search, pickup, and readiness.
+
+## Storage modes
+
+- `FILE_STORAGE_PROVIDER=local` keeps uploaded files on disk under `UPLOAD_DIR`
+- `FILE_STORAGE_PROVIDER=cloudinary` uploads images to Cloudinary and returns hosted URLs
+
+Cloudinary mode requires:
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
 
 ### Storage modes
 
@@ -103,7 +114,7 @@ The test suite covers auth, upload, onboarding, search, pickup, and readiness.
 Set one of these modes:
 - `AI_PROVIDER=local` for zero-cost heuristic extraction
 - `AI_PROVIDER=tesseract` for free OCR-based extraction
-- `AI_PROVIDER=openai` plus `OPENAI_API_KEY` for vision extraction
+- `AI_PROVIDER=gemini` plus `GEMINI_API_KEY` for vision extraction
 
 If the selected provider fails, the backend falls back to the local extractor.
 

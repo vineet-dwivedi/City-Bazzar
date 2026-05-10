@@ -1,4 +1,4 @@
-import { StrictMode, useState } from 'react';
+import { StrictMode, Suspense, lazy, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ReactLenis } from 'lenis/react';
@@ -14,21 +14,22 @@ import './styles/global.scss';
 import { AppLayout, DashboardLayout } from './layouts/Layouts.jsx';
 
 // Pages
-import SplashScreen from './components/SplashScreen/SplashScreen.jsx';
-import Auth from './pages/Auth.jsx';
-import BuyerHome from './pages/Buyer/BuyerHome.jsx';
-import BuyerSearch from './pages/Buyer/BuyerSearch.jsx';
-import BuyerProfile from './pages/Buyer/BuyerProfile.jsx';
-import BuyerRequests from './pages/Buyer/BuyerRequests.jsx';
-import ShopDetail from './pages/Buyer/ShopDetail.jsx';
-import SellerDashboard from './pages/Seller/Dashboard.jsx';
-import AddProduct from './pages/Seller/AddProduct.jsx';
-import SellerAiReview from './pages/Seller/AiReview.jsx';
-import SellerAnalytics from './pages/Seller/Analytics.jsx';
-import Inventory from './pages/Seller/Inventory.jsx';
-import SellerRequests from './pages/Seller/Requests.jsx';
-import SellerSettings from './pages/Seller/Settings.jsx';
 import { APP_ROUTES, getHomePath, normalizeRole } from './lib/routes.js';
+
+const SplashScreen = lazy(() => import('./components/SplashScreen/SplashScreen.jsx'));
+const Auth = lazy(() => import('./pages/Auth.jsx'));
+const BuyerHome = lazy(() => import('./pages/Buyer/BuyerHome.jsx'));
+const BuyerSearch = lazy(() => import('./pages/Buyer/BuyerSearch.jsx'));
+const BuyerProfile = lazy(() => import('./pages/Buyer/BuyerProfile.jsx'));
+const BuyerRequests = lazy(() => import('./pages/Buyer/BuyerRequests.jsx'));
+const ShopDetail = lazy(() => import('./pages/Buyer/ShopDetail.jsx'));
+const SellerDashboard = lazy(() => import('./pages/Seller/Dashboard.jsx'));
+const AddProduct = lazy(() => import('./pages/Seller/AddProduct.jsx'));
+const SellerAiReview = lazy(() => import('./pages/Seller/AiReview.jsx'));
+const SellerAnalytics = lazy(() => import('./pages/Seller/Analytics.jsx'));
+const Inventory = lazy(() => import('./pages/Seller/Inventory.jsx'));
+const SellerRequests = lazy(() => import('./pages/Seller/Requests.jsx'));
+const SellerSettings = lazy(() => import('./pages/Seller/Settings.jsx'));
 
 // Route Guards
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -75,43 +76,55 @@ const RootRoute = () => {
   return <Navigate to={getHomePath(user?.role)} replace />;
 };
 
+const PageFallback = () => (
+  <div className="page-enter" style={{ padding: '24px' }}>
+    Loading page...
+  </div>
+);
+
 function App() {
   const [showSplash, setShowSplash] = useState(true);
 
   if (showSplash) {
-    return <SplashScreen onDone={() => setShowSplash(false)} />;
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <SplashScreen onDone={() => setShowSplash(false)} />
+      </Suspense>
+    );
   }
 
   return (
     <ReactLenis root options={{ lerp: 0.1, duration: 1.5, smoothWheel: true }}>
-      <Routes>
-        {/* Public Routes */}
-        <Route path={APP_ROUTES.auth} element={<PublicRoute><Auth /></PublicRoute>} />
-        <Route path="/" element={<RootRoute />} />
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path={APP_ROUTES.auth} element={<PublicRoute><Auth /></PublicRoute>} />
+          <Route path="/" element={<RootRoute />} />
 
-        {/* Buyer Routes (App Layout) */}
-        <Route element={<ProtectedRoute allowedRoles={['buyer']}><AppLayout /></ProtectedRoute>}>
-          <Route path={APP_ROUTES.buyerHome} element={<BuyerHome />} />
-          <Route path={APP_ROUTES.buyerSearch} element={<BuyerSearch />} />
-          <Route path="/shop/:shopId" element={<ShopDetail />} />
-          <Route path={APP_ROUTES.buyerProfile} element={<BuyerProfile />} />
-          <Route path={APP_ROUTES.buyerRequests} element={<BuyerRequests />} />
-        </Route>
+          {/* Buyer Routes (App Layout) */}
+          <Route element={<ProtectedRoute allowedRoles={['buyer']}><AppLayout /></ProtectedRoute>}>
+            <Route path={APP_ROUTES.buyerHome} element={<BuyerHome />} />
+            <Route path={APP_ROUTES.buyerSearch} element={<BuyerSearch />} />
+            <Route path="/shop/:shopId" element={<ShopDetail />} />
+            <Route path={APP_ROUTES.buyerProfile} element={<BuyerProfile />} />
+            <Route path={APP_ROUTES.buyerRequests} element={<BuyerRequests />} />
+          </Route>
 
-        {/* Seller Routes (Dashboard Layout) */}
-        <Route path={APP_ROUTES.sellerHome} element={<ProtectedRoute allowedRoles={['seller']}><DashboardLayout /></ProtectedRoute>}>
-          <Route index element={<SellerDashboard />} />
-          <Route path="add" element={<AddProduct />} />
-          <Route path="ai-review" element={<SellerAiReview />} />
-          <Route path="inventory" element={<Inventory />} />
-          <Route path="requests" element={<SellerRequests />} />
-          <Route path="analytics" element={<SellerAnalytics />} />
-          <Route path="settings" element={<SellerSettings />} />
-        </Route>
+          {/* Seller Routes (Dashboard Layout) */}
+          <Route path={APP_ROUTES.sellerHome} element={<ProtectedRoute allowedRoles={['seller']}><DashboardLayout /></ProtectedRoute>}>
+            <Route index element={<SellerDashboard />} />
+            <Route path="add" element={<AddProduct />} />
+            <Route path="ai-review" element={<SellerAiReview />} />
+            <Route path="inventory" element={<Inventory />} />
+            <Route path="requests" element={<SellerRequests />} />
+            <Route path="analytics" element={<SellerAnalytics />} />
+            <Route path="settings" element={<SellerSettings />} />
+          </Route>
 
-        {/* Catch All */}
-        <Route path="*" element={<Navigate to={APP_ROUTES.auth} replace />} />
-      </Routes>
+          {/* Catch All */}
+          <Route path="*" element={<Navigate to={APP_ROUTES.auth} replace />} />
+        </Routes>
+      </Suspense>
     </ReactLenis>
   );
 }
